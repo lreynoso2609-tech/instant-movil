@@ -13,11 +13,12 @@
 <link rel="stylesheet" href="movil.css">
 </head>
 <body>
-<main class="app">
-  <header class="top"><img src="logo.svg" alt="" width="36" height="36"><h1>Instant</h1><button class="salir" id="salir" hidden>Salir</button></header>
+<main class="app" id="app" data-vista="login">
+  <header class="top" id="cabecera"><span class="ico"><img src="logo.svg" alt="" width="40" height="40"></span><h1>Instant</h1><button class="salir" id="salir" hidden>Salir</button></header>
 
   <section id="login" hidden>
-    <p class="soft">Entra con tu correo para mandar enlaces a tu biblioteca.</p>
+    <div class="marca"><span class="ico grande"><img src="logo.svg" alt="Instant" width="96" height="96"></span><h1>Instant</h1></div>
+    <p class="soft centrado">Entra con tu correo para mandar enlaces a tu biblioteca.</p>
     <form id="formLogin" autocomplete="on">
       <label>Correo<input id="correo" type="email" autocomplete="username" required></label>
       <label>Contraseña<input id="clave" type="password" autocomplete="current-password" required></label>

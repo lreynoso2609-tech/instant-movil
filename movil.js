@@ -41,7 +41,7 @@ async function renovar() {
 function salir() { sesion = null; guardar('sesion', null); clearInterval(timer); mostrar(); }
 
 function mostrar() {
-  $('#login').hidden = !!sesion; $('#panel').hidden = !sesion; $('#salir').hidden = !sesion;
+  $('#login').hidden = !!sesion; $('#panel').hidden = !sesion; $('#salir').hidden = !sesion; $('#app').dataset.vista = sesion ? 'panel' : 'login';
   if (sesion) { cargarLista(); clearInterval(timer); timer = setInterval(cargarLista, 6000); }
 }
 
@@ -87,5 +87,5 @@ const q = new URLSearchParams(location.search);
 const compartido = [q.get('url'), q.get('text'), q.get('title')].filter(Boolean).join(' ');
 if (compartido) { $('#enlaces').value = enlacesDe(compartido).join('\n') || compartido; history.replaceState(null, '', location.pathname); }
 
-if (!CFG.url || !CFG.clave) { $('#login').hidden = true; aviso('Falta configurar Supabase (archivo config.js).', true); }
+if (!CFG.url || !CFG.clave) { $('#login').hidden = true; $('#app').dataset.vista = 'login'; aviso('Falta configurar Supabase (archivo config.js).', true); }
 else { sesion = leer('sesion'); mostrar(); }
