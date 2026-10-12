@@ -1,7 +1,7 @@
 // Instant nube: lee la lista de enlaces (Supabase), descarga y sube a Google Drive ("Instant nube").
 // Corre en GitHub Actions. El repo es PÚBLICO: aquí NUNCA se imprimen enlaces, cuentas ni claves (solo conteos).
 // Uso: node nube/procesar.js --revisar   (solo avisa si hay pendientes)   |   node nube/procesar.js
-const { spawnSync } = require('child_process');
+const { spawnSync, spawn } = require('child_process');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -101,12 +101,29 @@ function explicar(r, texto) {
   return 'No se pudo descargar este enlace desde la nube.';
 }
 const yt = (args) => spawnSync('yt-dlp', args, { encoding: 'utf8', maxBuffer: 1 << 26 });
+// yt-dlp sin bloquear, leyendo su porcentaje (la salida NO se imprime: puede traer enlaces).
+function ytAvance(args, alPct) {
+  return new Promise((ok) => {
+    const h = spawn('yt-dlp', args);
+    let salida = '', resto = '';
+    const leer = (d) => { salida += d; resto += d; const ls = resto.split(/\r?\n|\r/); resto = ls.pop(); ls.forEach(alPct); };
+    h.stdout.on('data', leer); h.stderr.on('data', (d) => { salida += d; });
+    h.on('close', (status) => ok({ status, stdout: salida, stderr: '' }));
+    h.on('error', () => ok({ status: 1, stdout: '', stderr: 'no se pudo abrir yt-dlp' }));
+  });
+}
 const hayMp4 = (x) => fs.readdirSync(x).some((n) => {
   const p = path.join(x, n);
   return fs.statSync(p).isDirectory() ? hayMp4(p) : n.endsWith('.mp4');
 });
 
 async function procesar(fila) {
+  let ultimo = 0, mayor = 5;
+  const avance = (pct, texto) => { // se guarda en la lista cada ~4 s para que el celular lo muestre
+    if (Date.now() - ultimo < 4000) return;
+    ultimo = Date.now();
+    return marcar(fila.id, 'bajando', `${texto} ${Math.round(pct)} %`).catch(() => {});
+  };
   const url = await resolver(String(fila.enlace).trim());
   const r = red(url);
   if (!r) return ['error', 'Enlace no reconocido. Instant acepta TikTok, Instagram y Facebook.'];
@@ -121,10 +138,22 @@ async function procesar(fila) {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'instant-'));
   try {
     const plantilla = path.join(tmp, r, '%(uploader,channel,uploader_id|desconocido)s', '%(upload_date|0000)s_%(id)s', '%(id)s.%(ext)s');
-    const d = yt(['--no-playlist', '-f', 'bv*+ba/b', '--merge-output-format', 'mp4', '--write-info-json', '--write-thumbnail',
-      '--convert-thumbnails', 'jpg', '--windows-filenames', '--trim-filenames', '120', '--quiet', '--no-warnings', '-o', plantilla, url]);
+    await avance(5, 'Descargando…');
+    let flujo = 0, dos = false;
+    const d = await ytAvance(['--no-playlist', '-f', 'bv*+ba/b', '--merge-output-format', 'mp4', '--write-info-json', '--write-thumbnail',
+      '--convert-thumbnails', 'jpg', '--windows-filenames', '--trim-filenames', '120', '--quiet', '--progress', '--newline', '--no-warnings', '-o', plantilla, url], (l) => {
+      if (/^\[download\] Destination:/.test(l)) flujo++;
+      const fm = /Downloading \d+ format\(s\): (.+)/.exec(l); if (fm) dos = fm[1].includes('+');
+      const m = /^\[download\]\s+([\d.]+)%/.exec(l);
+      if (m) { // video y audio por separado: cada uno es la mitad de la barra (hasta el 80 %)
+        const parte = dos ? (flujo >= 2 ? 50 : 0) + +m[1] / 2 : +m[1];
+        mayor = Math.max(mayor, 5 + parte * 0.75);
+        avance(Math.min(mayor, 80), 'Descargando…');
+      }
+    });
     if (d.status !== 0) return ['error', explicar(r, (d.stderr || '') + (d.stdout || ''))];
     if (!hayMp4(tmp)) return ['error', 'El enlace no tiene un video descargable. Los carruseles de fotos todavía no se bajan desde el celular.'];
+    ultimo = 0; await avance(85, 'Subiendo a tu Drive…');
     await subirArbol(tmp, await carpeta('Instant nube', null));
     return ['listo', 'Guardado en "Instant nube". La PC lo traerá a tu biblioteca.'];
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
