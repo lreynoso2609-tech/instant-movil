@@ -45,13 +45,25 @@ function mostrar() {
   if (sesion) { cargarLista(); clearInterval(timer); timer = setInterval(cargarLista, 6000); }
 }
 
+function hace(f) {
+  const min = Math.max(0, Math.round((Date.now() - new Date(f)) / 60000));
+  return min < 1 ? 'recién enviado' : min < 60 ? `enviado hace ${min} min` : `enviado hace ${Math.round(min / 60)} h`;
+}
+function itemHtml(x) {
+  const pct = x.estado === 'bajando' ? +((/(\d+) %/.exec(x.mensaje || '') || [])[1] || 0) : null;
+  const texto = x.estado === 'pendiente' ? `${hace(x.creado)} · la nube lo recoge en unos minutos` : (x.mensaje || '');
+  const barra = x.estado === 'pendiente' ? '<div class="barra espera"><i></i></div>'
+    : x.estado === 'bajando' ? `<div class="barra"><i style="width:${Math.max(4, pct)}%"></i></div>` : '';
+  return `<li class="item"><span class="en">${esc(x.enlace)}</span>
+    <span class="estado"><span class="pill ${esc(x.estado)}">${TEXTO[x.estado] || esc(x.estado)}</span><span class="txt">${esc(texto)}</span></span>${barra}</li>`;
+}
+
 async function cargarLista() {
   if (!(await renovar())) return;
   const r = await llamar('/rest/v1/cola?select=id,enlace,estado,mensaje,creado&order=id.desc&limit=30', { token: sesion.token });
   if (!r.ok) return;
   $('#vacio').hidden = r.datos.length > 0;
-  $('#lista').innerHTML = r.datos.map((x) => `<li class="item"><span class="en">${esc(x.enlace)}</span>
-    <span class="estado"><span class="pill ${esc(x.estado)}">${TEXTO[x.estado] || esc(x.estado)}</span><span>${esc(x.mensaje || '')}</span></span></li>`).join('');
+  $('#lista').innerHTML = r.datos.map(itemHtml).join('');
 }
 
 function enlacesDe(texto) {
