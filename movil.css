@@ -21,7 +21,7 @@ input:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px soli
 .item{display:grid;gap:4px;padding:12px 14px;border-radius:10px;background:var(--raise);border:1px solid var(--line)}
 .item .en{word-break:break-all;font-size:14px}
 .item .estado{display:flex;justify-content:space-between;gap:10px;font-size:13px;color:var(--soft)}
-.pill{padding:2px 10px;border-radius:99px;font-size:12px;font-weight:700;background:var(--surface);color:var(--soft)}
+.pill{white-space:nowrap;flex:none;align-self:flex-start;padding:2px 10px;border-radius:99px;font-size:12px;font-weight:700;background:var(--surface);color:var(--soft)}
 .pill.listo{background:rgba(57,255,106,.14);color:var(--accent)}
 .pill.bajando{color:var(--accent);border:1px solid rgba(57,255,106,.5)}
 .pill.error{color:var(--bad);background:rgba(255,107,107,.1)}
@@ -49,3 +49,10 @@ input:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px soli
 #login .marca .ico{margin:14px 0 6px}
 .centrado{text-align:center;text-wrap:balance}
 .app[data-vista="login"] .aviso{text-align:center}
+
+.item .txt{text-align:right}
+.barra{height:6px;border-radius:99px;background:var(--surface);overflow:hidden;margin-top:10px}
+.barra i{display:block;height:100%;background:var(--accent);border-radius:99px;transition:width .6s ease}
+.barra.espera i{width:35%;opacity:.55;animation:vaiven 1.8s ease-in-out infinite alternate}
+@keyframes vaiven{from{transform:translateX(0)}to{transform:translateX(185%)}}
+@media (prefers-reduced-motion:reduce){.barra.espera i{animation:none;width:100%}}
