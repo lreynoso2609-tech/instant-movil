@@ -1,0 +1,36 @@
+name: Instant nube
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+# Una sola corrida a la vez (para no bajar lo mismo dos veces).
+concurrency:
+  group: instant-nube
+  cancel-in-progress: false
+
+jobs:
+  descargar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+      INSTANT_EMAIL: ${{ secrets.INSTANT_EMAIL }}
+      INSTANT_PASSWORD: ${{ secrets.INSTANT_PASSWORD }}
+      GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+      GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+      GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Revisar si hay enlaces pendientes
+        id: revisar
+        run: node nube/procesar.js --revisar
+      - name: Instalar herramientas
+        if: steps.revisar.outputs.hay == 'true'
+        run: |
+          sudo apt-get install -y -qq ffmpeg > /dev/null
+          pip install -q -U "yt-dlp[default,curl-cffi]" > /dev/null
+      - name: Descargar y subir a Drive
+        if: steps.revisar.outputs.hay == 'true'
+        run: node nube/procesar.js
