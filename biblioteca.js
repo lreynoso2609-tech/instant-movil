@@ -2,6 +2,7 @@
    Usa llamar(), renovar() y sesion de movil.js. */
 const REDES = { tiktok: 'TikTok', instagram: 'Instagram', facebook: 'Facebook' };
 let todas = [], cargada = false;
+const LOGO_DRIVE = '<svg viewBox="0 0 87.3 78" width="20" height="18" aria-hidden="true"><path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/><path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0-1.2 4.5h27.5z" fill="#00ac47"/><path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.5l5.85 11.5z" fill="#ea4335"/><path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/><path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/><path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/></svg>';
 
 const fmt = (n) => n == null ? '–' : n >= 1e6 ? (n / 1e6).toFixed(1).replace('.0', '') + ' M' : n >= 1e3 ? (n / 1e3).toFixed(1).replace('.0', '') + ' mil' : String(n);
 const fechaTxt = (f) => /^\d{8}$/.test(f || '') ? `${f.slice(6)}/${f.slice(4, 6)}/${f.slice(0, 4)}` : '';
@@ -55,7 +56,7 @@ function pintar() {
   $('#bibEstado').textContent = todas.length ? 'Nada coincide con tu búsqueda. Prueba quitar algún filtro.' : 'Tu biblioteca está vacía.';
   $('#bibCuenta').textContent = todas.length ? `${l.length} de ${todas.length}` : '';
   $('#rejilla').innerHTML = l.map((x) => `<li><button class="tarjeta" data-id="${esc(x.id)}">
-    <span class="foto">${x.portada ? `<img src="${esc(x.portada)}" alt="" loading="lazy">` : ''}<em>${esc(REDES[x.red] || x.red)}</em>${x.favorito ? '<b aria-label="Favorito">★</b>' : ''}</span>
+    <span class="foto">${x.portada ? `<img src="${esc(x.portada)}" alt="" loading="lazy">` : ''}<em class="r-${esc(x.red)}">${esc(REDES[x.red] || x.red)}</em>${x.favorito ? '<b aria-label="Favorito">★</b>' : ''}</span>
     <span class="cuenta">@${esc(x.cuenta || '')}</span><span class="gancho">${esc(x.hook || x.copy || '')}</span>
     <span class="vistas">${fmt(x.vistas)} vistas</span></button></li>`).join('');
 }
@@ -75,7 +76,7 @@ function ficha(id) {
     ${x.copy ? `<h4>Texto original</h4><p class="copy">${esc(x.copy)}</p>` : ''}
     ${x.sonido ? `<p class="soft">♪ ${esc(x.sonido)}</p>` : ''}
     ${/^https:\/\//.test(x.enlace || '') ? `<a class="btn" href="${esc(x.enlace)}" target="_blank" rel="noopener noreferrer">Ver original</a>` : ''}
-    <a class="enlaceChico" href="https://drive.google.com/drive/search?q=${encodeURIComponent(String(x.id).split(':')[1] || '')}" target="_blank" rel="noopener noreferrer">Ver en Drive</a>
+    <a class="enlaceChico" href="https://drive.google.com/drive/search?q=${encodeURIComponent(String(x.id).split(':')[1] || '')}" target="_blank" rel="noopener noreferrer">${LOGO_DRIVE}<span>Ver en Drive</span></a>
     <p class="soft nota">El video completo está en tu PC (Instant). Aquí solo se ve la ficha.</p>`;
   $('#ficha').hidden = false; document.body.style.overflow = 'hidden'; $('#fichaCerrar').focus();
 }
