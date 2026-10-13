@@ -13,10 +13,10 @@ if (faltan.length) { console.log('Faltan Secrets: ' + faltan.join(', ')); proces
 
 // ---------- Supabase ----------
 let jwt = '';
-async function sb(ruta, { metodo = 'GET', cuerpo } = {}) {
+async function sb(ruta, { metodo = 'GET', cuerpo, extra } = {}) {
   const r = await fetch(E.SUPABASE_URL + ruta, {
     method: metodo,
-    headers: { apikey: E.SUPABASE_KEY, Authorization: 'Bearer ' + (jwt || E.SUPABASE_KEY), 'Content-Type': 'application/json' },
+    headers: { apikey: E.SUPABASE_KEY, Authorization: 'Bearer ' + (jwt || E.SUPABASE_KEY), 'Content-Type': 'application/json', ...(extra || {}) },
     body: cuerpo ? JSON.stringify(cuerpo) : undefined,
   });
   if (!r.ok) throw new Error('Supabase respondió ' + r.status);
@@ -117,6 +117,44 @@ const hayMp4 = (x) => fs.readdirSync(x).some((n) => {
   return fs.statSync(p).isDirectory() ? hayMp4(p) : n.endsWith('.mp4');
 });
 
+// Registra la publicación en la tabla "biblioteca" (la que lee la pestaña Biblioteca del celular).
+// Estado "En la nube": cuando la PC la traiga, la ficha completa la reemplaza. Si algo falla, no se detiene nada.
+function buscarArchivo(dir, fin) {
+  for (const n of fs.readdirSync(dir)) {
+    const p = path.join(dir, n);
+    if (fs.statSync(p).isDirectory()) { const x = buscarArchivo(p, fin); if (x) return x; }
+    else if (n.endsWith(fin)) return p;
+  }
+  return null;
+}
+async function avisarCelular(tmp, r, url) {
+  try {
+    const ip = buscarArchivo(tmp, '.info.json'); if (!ip) return;
+    const i = JSON.parse(fs.readFileSync(ip, 'utf8'));
+    let portada = null;
+    const origen = buscarArchivo(tmp, '.jpg') || buscarArchivo(tmp, '.mp4');
+    if (origen) {
+      const f = spawnSync('ffmpeg', ['-v', 'error', '-i', origen, '-vf', 'scale=240:-2', '-frames:v', '1', '-q:v', '7', '-f', 'image2pipe', '-vcodec', 'mjpeg', '-'], { maxBuffer: 5 << 20 });
+      if (f.status === 0 && f.stdout.length) portada = 'data:image/jpeg;base64,' + f.stdout.toString('base64');
+    }
+    const copy = String(i.description || i.title || '').trim();
+    const n = (x) => (Number.isFinite(Number(x)) && x != null ? Number(x) : null);
+    const d = String(i.upload_date || '');
+    await sb('/rest/v1/biblioteca?on_conflict=id', {
+      metodo: 'POST', extra: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+      cuerpo: [{
+        id: r + ':' + i.id, red: r, cuenta: i.uploader || i.channel || i.uploader_id || null, enlace: i.webpage_url || url,
+        copy: copy || null, hook: copy.split(/\n|(?<=[.!?¡¿])\s/)[0].slice(0, 140) || null,
+        etiquetas: [...new Set((copy.match(/#[\p{L}\d_]+/gu) || []).map((t) => t.slice(1).toLowerCase()))].slice(0, 12),
+        estado: 'En la nube', favorito: false,
+        vistas: n(i.view_count), likes: n(i.like_count), comentarios: n(i.comment_count), compartidos: n(i.repost_count),
+        duracion: n(i.duration) == null ? null : Math.round(i.duration), fecha_publicacion: d || null,
+        descargado: new Date().toISOString(), portada, actualizado: new Date().toISOString(),
+      }],
+    });
+  } catch { /* si falla, la PC lo registrará después */ }
+}
+
 async function procesar(fila) {
   let ultimo = 0, mayor = 5;
   const avance = (pct, texto) => { // se guarda en la lista cada ~4 s para que el celular lo muestre
@@ -155,6 +193,7 @@ async function procesar(fila) {
     if (!hayMp4(tmp)) return ['error', 'El enlace no tiene un video descargable. Los carruseles de fotos todavía no se bajan desde el celular.'];
     ultimo = 0; await avance(85, 'Subiendo a tu Drive…');
     await subirArbol(tmp, await carpeta('Instant nube', null));
+    await avisarCelular(tmp, r, url); // aparece ya en la Biblioteca del celular, aunque la PC esté apagada
     return ['listo', 'Guardado en "Instant nube". La PC lo traerá a tu biblioteca.'];
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 }
