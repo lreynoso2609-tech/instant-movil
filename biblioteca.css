@@ -17,8 +17,8 @@ select,.fav{font:inherit;font-size:15px;color:var(--text);background:#0f1611;bor
 .tarjeta em{position:absolute;left:8px;top:8px;font:700 11px var(--body);font-style:normal;padding:2px 8px;border-radius:99px;background:rgba(5,8,6,.78);color:var(--text)}
 .tarjeta b{position:absolute;right:8px;top:6px;color:var(--accent);font-size:16px}
 .tarjeta .cuenta{padding:0 10px;font:600 14px var(--display);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tarjeta .gancho{padding:0 10px;font-size:13px;color:var(--soft);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.tarjeta .vistas{padding:0 10px;font-size:12px;color:var(--accent)}
+.tarjeta .gancho{padding:0 10px;font-size:14px;color:var(--soft);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.tarjeta .vistas{padding:0 10px;font-size:13px;color:var(--accent)}
 .ficha{position:fixed;inset:0;z-index:10;background:rgba(5,8,6,.82);display:grid;align-items:end}
 .fichaPanel{max-width:560px;width:100%;margin:0 auto;max-height:92dvh;overflow:auto;background:var(--surface);border:1px solid var(--line-hi);border-radius:18px 18px 0 0;padding:16px 16px max(24px,env(safe-area-inset-bottom));display:grid;gap:12px;animation:sube .22s ease-out}
 @keyframes sube{from{transform:translateY(24px);opacity:0}}
