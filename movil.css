@@ -52,6 +52,19 @@ input:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px soli
 
 .item .txt{text-align:right}
 .pg{display:flex;align-items:center;gap:10px;margin-top:10px}
-.barra{flex:1;height:8px;border-radius:99px;background:var(--surface);overflow:hidden}
-.barra i{display:block;height:100%;width:100%;transform-origin:left;transform:scaleX(0);background:var(--accent);border-radius:99px;box-shadow:0 0 10px -2px rgba(57,255,106,.6);will-change:transform}
+.barra{position:relative;flex:1;height:10px;border-radius:99px;background:var(--surface)}
+.barra i{position:absolute;inset:0;display:block;width:100%;transform-origin:left;transform:scaleX(0);background:linear-gradient(90deg,rgba(57,255,106,.18),var(--accent));border-radius:99px;will-change:transform}
+/* Descargando: cometa con luz que chispea y estalla al llegar al 100 % */
+.cometa{position:absolute;top:50%;left:0;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle,#fff 0 22%,#b6ffc9 40%,rgba(57,255,106,.55) 62%,transparent 72%);box-shadow:0 0 14px 3px rgba(57,255,106,.65)}
+.cometa::before,.cometa::after{content:"";position:absolute;left:50%;top:50%;width:3px;height:3px;border-radius:50%;background:#d6ffe0;box-shadow:0 0 6px 1px var(--accent);animation:chispa .55s ease-out infinite}
+.cometa::after{animation-delay:.27s;animation-duration:.7s;width:2px;height:2px}
+@keyframes chispa{0%{opacity:0;transform:translate(-2px,0)}20%{opacity:1}100%{opacity:0;transform:translate(-22px,-12px)}}
+.pg.llego .cometa{animation:estalla .7s ease-out forwards}
+@keyframes estalla{0%{transform:scale(1);opacity:1}60%{transform:scale(2.6);opacity:.9}100%{transform:scale(4);opacity:0}}
+/* En espera: barra fina con un brillo que la recorre por dentro (distinta a la de descarga) */
+.pg.busca .barra{height:5px}
+.pg.busca .barra i{background:var(--accent);overflow:hidden;opacity:.9}
+.pg.busca .barra i::after{content:"";position:absolute;inset:0;width:50px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);animation:brillo 1.4s linear infinite}
+@keyframes brillo{from{transform:translateX(-50px)}to{transform:translateX(500px)}}
 .pg-n{font:600 13px var(--body);font-variant-numeric:tabular-nums;color:var(--accent);min-width:3.2em;text-align:right}
