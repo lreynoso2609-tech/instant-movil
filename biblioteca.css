@@ -37,3 +37,23 @@ select,.fav{font:inherit;font-size:15px;color:var(--text);background:#0f1611;bor
 .chips span{padding:4px 10px;border-radius:99px;background:var(--raise);border:1px solid var(--line-hi);font-size:13px}
 a.btn{display:grid;place-items:center;text-decoration:none}
 .nota{font-size:13px;text-align:center}
+.enlaceChico{justify-self:center;display:grid;place-items:center;min-height:40px;padding:0 16px;border:1px solid var(--line-hi);border-radius:10px;color:var(--soft);font-size:14px;text-decoration:none}
+
+/* Login mínimo: usuario, contraseña con ojo y "guardar inicio rápido" */
+.campoClave{position:relative;display:block}
+.campoClave input{padding-right:52px}
+.ojo{position:absolute;right:0;top:0;width:48px;height:48px;display:grid;place-items:center;background:none;border:0;color:var(--soft)}
+.ojo[aria-pressed="true"]{color:var(--accent)}
+.ojo .ojoCerrado{display:none}.ojo[aria-pressed="true"] .ojoAbierto{display:none}.ojo[aria-pressed="true"] .ojoCerrado{display:block}
+label.rapido{display:flex;align-items:center;gap:12px;min-height:44px;color:var(--text);font-size:15px}
+label.rapido input{width:22px;height:22px;min-height:0;padding:0;accent-color:var(--accent);flex:none}
+/* Entrando…: un brillo recorre el botón */
+.btn{position:relative;overflow:hidden}
+.btn.cargando{opacity:1}
+.btn.cargando::after{content:"";position:absolute;inset:0;width:45%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);animation:brilloBtn 1s linear infinite}
+@keyframes brilloBtn{from{transform:translateX(-100%)}to{transform:translateX(320%)}}
+/* Botón de pegar (solo el icono) dentro del cuadro de enlaces */
+.campoEnlaces{position:relative}
+.campoEnlaces textarea{padding-right:60px}
+.pegar{position:absolute;right:8px;top:8px;width:44px;height:44px;display:grid;place-items:center;border-radius:10px;background:var(--raise);border:1px solid var(--line-hi);color:var(--accent);transition:transform .12s}
+.pegar:active{transform:scale(.92)}
