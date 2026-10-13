@@ -10,8 +10,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="stylesheet" href="fuentes.css">
-<link rel="stylesheet" href="movil.css?v=5">
-<link rel="stylesheet" href="biblioteca.css?v=5">
+<link rel="stylesheet" href="movil.css?v=6">
+<link rel="stylesheet" href="biblioteca.css?v=6">
 </head>
 <body>
 <main class="app" id="app" data-vista="login">
@@ -19,11 +19,19 @@
 
   <section id="login" hidden>
     <div class="marca"><span class="ico grande"><img src="logo.svg" alt="Instant" width="96" height="96"></span><h1>Instant</h1></div>
-    <p class="soft centrado">Entra con tu correo para mandar enlaces a tu biblioteca.</p>
     <form id="formLogin" autocomplete="on">
-      <label>Correo<input id="correo" type="email" autocomplete="username" required></label>
-      <label>Contraseña<input id="clave" type="password" autocomplete="current-password" required></label>
-      <button class="btn" type="submit">Entrar</button>
+      <label>Correo o usuario<input id="correo" type="text" inputmode="email" autocapitalize="off" autocorrect="off" spellcheck="false" autocomplete="username" required></label>
+      <label>Contraseña
+        <span class="campoClave">
+          <input id="clave" type="password" autocomplete="current-password" required>
+          <button type="button" id="ojo" class="ojo" aria-label="Mostrar contraseña" aria-pressed="false">
+            <svg class="ojoAbierto" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+            <svg class="ojoCerrado" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.6 5.1A10.9 10.9 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4.2M6.6 6.6A17 17 0 0 0 2 12s3.6 7 10 7a10.7 10.7 0 0 0 4.4-.9"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>
+          </button>
+        </span>
+      </label>
+      <label class="rapido"><input id="rapido" type="checkbox" checked><span>Guardar inicio rápido</span></label>
+      <button class="btn" id="entrar" type="submit">Entrar</button>
     </form>
   </section>
 
@@ -32,7 +40,12 @@
     <div id="vistaEnviar">
     <form id="formEnlaces">
       <label for="enlaces">Pega uno o varios enlaces (TikTok, Instagram o Facebook)</label>
-      <textarea id="enlaces" rows="4" placeholder="https://www.tiktok.com/@cuenta/video/…" autocomplete="off"></textarea>
+      <div class="campoEnlaces">
+        <textarea id="enlaces" rows="4" placeholder="https://www.tiktok.com/@cuenta/video/…" autocomplete="off"></textarea>
+        <button type="button" id="pegar" class="pegar" aria-label="Pegar enlace copiado y guardar" title="Pegar y guardar">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="3" width="8" height="4" rx="1"/><path d="M16 5h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2"/><path d="M12 11v6m-3-3 3 3 3-3"/></svg>
+        </button>
+      </div>
       <button class="btn" type="submit">Guardar en mi biblioteca</button>
     </form>
     <h2>Mis envíos</h2>
@@ -55,8 +68,8 @@
 
   <p class="aviso" id="aviso" role="status" hidden></p>
 </main>
-<script src="config.js?v=5"></script>
-<script src="movil.js?v=5"></script>
-<script src="biblioteca.js?v=5"></script>
+<script src="config.js?v=6"></script>
+<script src="movil.js?v=6"></script>
+<script src="biblioteca.js?v=6"></script>
 </body>
 </html>
