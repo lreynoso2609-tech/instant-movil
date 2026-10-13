@@ -38,6 +38,9 @@ select,.fav{font:inherit;font-size:15px;color:var(--text);background:#0f1611;bor
 a.btn{display:grid;place-items:center;text-decoration:none}
 .nota{font-size:13px;text-align:center}
 #fichaCuerpo{display:grid;gap:12px}
+.btnAudio{min-height:48px;border-radius:10px;border:1px solid var(--accent);background:rgba(57,255,106,.1);color:var(--accent);font:600 15px var(--body)}
+.btnAudio:disabled{opacity:.7}
+.cajaAudio audio{width:100%;display:block}
 .enlaceChico{justify-self:center;display:inline-flex;align-items:center;gap:8px;min-height:40px;margin-top:6px;padding:0 16px;border:1px solid var(--line-hi);border-radius:10px;color:var(--soft);font-size:14px;text-decoration:none}
 .enlaceChico svg{flex:none}
 /* Etiqueta de la red sobre cada portada, con los colores de cada una */
