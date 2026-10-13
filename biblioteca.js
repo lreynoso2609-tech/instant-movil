@@ -74,7 +74,8 @@ function ficha(id) {
     ${(x.etiquetas || []).length ? `<div class="chips">${x.etiquetas.map((t) => `<span>${esc(t)}</span>`).join('')}</div>` : ''}
     ${x.copy ? `<h4>Texto original</h4><p class="copy">${esc(x.copy)}</p>` : ''}
     ${x.sonido ? `<p class="soft">♪ ${esc(x.sonido)}</p>` : ''}
-    ${/^https:\/\//.test(x.enlace || '') ? `<a class="btn" href="${esc(x.enlace)}" target="_blank" rel="noopener noreferrer">Abrir original</a>` : ''}
+    ${/^https:\/\//.test(x.enlace || '') ? `<a class="btn" href="${esc(x.enlace)}" target="_blank" rel="noopener noreferrer">Ver original</a>` : ''}
+    <a class="enlaceChico" href="https://drive.google.com/drive/search?q=${encodeURIComponent(String(x.id).split(':')[1] || '')}" target="_blank" rel="noopener noreferrer">Ver en Drive</a>
     <p class="soft nota">El video completo está en tu PC (Instant). Aquí solo se ve la ficha.</p>`;
   $('#ficha').hidden = false; document.body.style.overflow = 'hidden'; $('#fichaCerrar').focus();
 }
