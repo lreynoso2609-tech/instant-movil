@@ -75,11 +75,23 @@ function ficha(id) {
     ${(x.etiquetas || []).length ? `<div class="chips">${x.etiquetas.map((t) => `<span>${esc(t)}</span>`).join('')}</div>` : ''}
     ${x.copy ? `<h4>Texto original</h4><p class="copy">${esc(x.copy)}</p>` : ''}
     ${x.sonido ? `<p class="soft">♪ ${esc(x.sonido)}</p>` : ''}
+    ${x.audio ? `<button type="button" class="btnAudio" data-ruta="${esc(x.audio)}">♪ Escuchar la pista de audio</button><div class="cajaAudio"></div>` : ''}
     ${/^https:\/\//.test(x.enlace || '') ? `<a class="btn" href="${esc(x.enlace)}" target="_blank" rel="noopener noreferrer">Ver original</a>` : ''}
     <a class="enlaceChico" href="https://drive.google.com/drive/search?q=${encodeURIComponent(String(x.id).split(':')[1] || '')}" target="_blank" rel="noopener noreferrer">${LOGO_DRIVE}<span>Ver en Drive</span></a>
     <p class="soft nota">El video completo está en tu PC (Instant). Aquí solo se ve la ficha.</p>`;
   $('#ficha').hidden = false; document.body.style.overflow = 'hidden'; $('#fichaCerrar').focus();
 }
+// La pista de audio se baja solo al tocar el botón (privada: solo con tu sesión).
+$('#fichaCuerpo').addEventListener('click', async (e) => {
+  const btn = e.target.closest('.btnAudio'); if (!btn) return;
+  const caja = btn.nextElementSibling; btn.disabled = true; btn.textContent = 'Cargando audio…';
+  try {
+    if (!(await renovar())) throw 0;
+    const r = await fetch(CFG.url + '/storage/v1/object/authenticated/audios/' + encodeURIComponent(btn.dataset.ruta), { headers: { apikey: CFG.clave, Authorization: 'Bearer ' + sesion.token } });
+    if (!r.ok) throw 0;
+    caja.innerHTML = `<audio controls autoplay src="${URL.createObjectURL(await r.blob())}"></audio>`; btn.hidden = true;
+  } catch { btn.disabled = false; btn.textContent = 'No se pudo cargar. Toca para reintentar'; }
+});
 function cerrarFicha() { $('#ficha').hidden = true; document.body.style.overflow = ''; }
 
 document.querySelectorAll('.tabs button').forEach((b) => b.addEventListener('click', () => pestana(b.dataset.tab)));
