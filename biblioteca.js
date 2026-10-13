@@ -89,4 +89,4 @@ $('#ficha').addEventListener('click', (e) => { if (e.target.id === 'ficha') cerr
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('#ficha').hidden) cerrarFicha(); });
 
 // Al abrir o recargar la página, vuelve a la pestaña que estabas viendo.
-if (sesion && leer("pestana") === "biblioteca") pestana("biblioteca");
+if (sesion && !vienesDeCompartir && leer("pestana") === "biblioteca") pestana("biblioteca");
