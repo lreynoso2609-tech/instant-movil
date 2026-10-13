@@ -4,7 +4,7 @@ const $ = (s) => document.querySelector(s);
 const CFG = window.INSTANT || {};
 const ES_ENLACE = /(tiktok\.com|instagram\.com|facebook\.com|fb\.watch|fb\.com)\//i;
 const TEXTO = { pendiente: 'En espera', bajando: 'Descargando…', listo: 'Guardado ✓', error: 'No se pudo', duplicado: 'Ya lo tenías' };
-let sesion = null, timer = null;
+let sesion = null, timer = null, proximo = 6000, ultimoHtml = '';
 
 // "Guardar inicio rápido": marcado, la sesión queda en el teléfono; sin marcar, se olvida al cerrar la app.
 let rapido = true;
@@ -13,9 +13,13 @@ const leer = (k) => { try { return JSON.parse(localStorage.getItem(k) ?? session
 rapido = leer('rapido') !== false;
 const esc = (t) => String(t ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
+// El aviso flota abajo (zona del pulgar) para verse siempre; los buenos se van solos, los errores se quedan hasta tocarlos.
+let avisoT;
 function aviso(texto, mal) {
   const a = $('#aviso'); a.hidden = !texto; a.textContent = texto || ''; a.classList.toggle('mal', !!mal);
+  clearTimeout(avisoT); if (texto && !mal) avisoT = setTimeout(() => { a.hidden = true; }, 8000);
 }
+$('#aviso').addEventListener('click', () => aviso(''));
 
 async function llamar(ruta, { metodo = 'GET', cuerpo, token } = {}) {
   const r = await fetch(CFG.url + ruta, {
@@ -36,37 +40,60 @@ async function entrar(correo, clave) {
 async function renovar() {
   if (!sesion) return false;
   if (Date.now() < sesion.vence) return true;
-  const r = await llamar('/auth/v1/token?grant_type=refresh_token', { metodo: 'POST', cuerpo: { refresh_token: sesion.refresco } });
-  if (!r.ok) { salir(); return false; }
+  const r = await llamar('/auth/v1/token?grant_type=refresh_token', { metodo: 'POST', cuerpo: { refresh_token: sesion.refresco } }).catch(() => null);
+  if (!r) { hayRed(false); return false; } // sin internet: no te saca de tu cuenta
+  if (!r.ok) { if (r.status >= 500) return false; salir('Tu sesión venció. Entra otra vez para seguir.'); return false; }
   sesion = { token: r.datos.access_token, refresco: r.datos.refresh_token, vence: Date.now() + (r.datos.expires_in - 60) * 1000 };
   guardar('sesion', sesion); return true;
 }
-function salir() { sesion = null; guardar('sesion', null); clearInterval(timer); mostrar(); }
+function salir(motivo) { sesion = null; guardar('sesion', null); clearTimeout(timer); ultimoHtml = ''; mostrar(); aviso(motivo || '', true); }
+// Franja "sin conexión": se muestra cuando falla internet y se quita sola al volver.
+function hayRed(si) { $('#sinRed').hidden = si; }
+window.addEventListener('offline', () => hayRed(false));
+window.addEventListener('online', () => { hayRed(true); if (sesion) cargarLista(); });
 
 function mostrar() {
   $('#login').hidden = !!sesion; $('#panel').hidden = !sesion; $('#salir').hidden = !sesion; $('#app').dataset.vista = sesion ? 'panel' : 'login';
-  if (sesion) { cargarLista(); clearInterval(timer); timer = setInterval(cargarLista, 6000); }
+  if (sesion) { cargarLista(); ciclo(); }
 }
+
+// Revisa los envíos cada 5 s si hay algo en proceso, cada 20 s si no, y nada mientras la app está en segundo plano.
+function ciclo() {
+  clearTimeout(timer);
+  timer = setTimeout(async () => { if (!sesion) return; if (!document.hidden) await cargarLista(); ciclo(); }, proximo);
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden && sesion) cargarLista(); });
 
 function hace(f) {
   const min = Math.max(0, Math.round((Date.now() - new Date(f)) / 60000));
   return min < 1 ? 'recién enviado' : min < 60 ? `enviado hace ${min} min` : `enviado hace ${Math.round(min / 60)} h`;
 }
+// "TikTok · @cuenta" en vez de la dirección larga (la dirección queda abajo, pequeña).
+function nombreEnlace(u) {
+  const red = /tiktok/i.test(u) ? 'TikTok' : /instagram/i.test(u) ? 'Instagram' : /facebook|fb\./i.test(u) ? 'Facebook' : 'Enlace';
+  const c = /tiktok\.com\/(@[^/?]+)/i.exec(u);
+  return c ? `${red} · ${c[1]}` : red;
+}
 function itemHtml(x) {
   const pct = x.estado === 'bajando' ? +((/(\d+) %/.exec(x.mensaje || '') || [])[1] || 0) : null;
-  const texto = x.estado === 'pendiente' ? `${hace(x.creado)} · la nube lo recoge en segundos` : (x.mensaje || '');
+  const texto = x.estado === 'pendiente' ? `${hace(x.creado)} · la nube lo recoge en segundos`
+    : x.estado === 'error' ? `${x.mensaje || 'No se pudo.'} Vuelve a mandarlo; si falla otra vez, bájalo desde la PC.` : (x.mensaje || '');
   const barra = x.estado === 'pendiente' || x.estado === 'bajando'
     ? `<div class="pg ${x.estado === 'pendiente' ? 'busca' : ''}" data-id="${x.id}" data-t="${pct ?? 0}" data-auto="${x.estado === 'pendiente' ? new Date(x.creado).getTime() : ''}"><div class="barra"><i></i>${x.estado === 'pendiente' ? '' : '<s class="cometa"></s>'}</div><b class="pg-n">0 %</b></div>` : '';
-  return `<li class="item"><span class="en">${esc(x.enlace)}</span>
+  return `<li class="item"><span class="en"><b>${esc(nombreEnlace(x.enlace))}</b><small>${esc(x.enlace)}</small></span>
     <span class="estado"><span class="pill ${esc(x.estado)}">${TEXTO[x.estado] || esc(x.estado)}</span><span class="txt">${esc(texto)}</span></span>${barra}</li>`;
 }
 
 async function cargarLista() {
   if (!(await renovar())) return;
-  const r = await llamar('/rest/v1/cola?select=id,enlace,estado,mensaje,creado&order=id.desc&limit=30', { token: sesion.token });
+  const r = await llamar('/rest/v1/cola?select=id,enlace,estado,mensaje,creado&order=id.desc&limit=30', { token: sesion.token }).catch(() => null);
+  if (!r) return hayRed(false);
+  hayRed(true);
   if (!r.ok) return;
+  proximo = r.datos.some((x) => x.estado === 'pendiente' || x.estado === 'bajando') ? 5000 : 20000;
   $('#vacio').hidden = r.datos.length > 0;
-  $('#lista').innerHTML = r.datos.map(itemHtml).join('');
+  const html = r.datos.map(itemHtml).join('');
+  if (html !== ultimoHtml) { $('#lista').innerHTML = html; ultimoHtml = html; } // solo se redibuja si algo cambió
 }
 
 function enlacesDe(texto) {
@@ -146,13 +173,15 @@ $('#formEnlaces').addEventListener('submit', async (e) => {
   } catch { aviso('No hay conexión. Revisa tu internet e inténtalo otra vez.', true); }
   finally { b.disabled = false; }
 });
-$('#salir').addEventListener('click', salir);
+$('#salir').addEventListener('click', () => { if (confirm('¿Cerrar la sesión? Tendrás que volver a entrar.')) salir(); });
 
 // Si llegas desde "Compartir → Instant" (Android con la app instalada), el enlace ya viene puesto.
 const q = new URLSearchParams(location.search);
 const compartido = [q.get('url'), q.get('text'), q.get('title')].filter(Boolean).join(' ');
 const vienesDeCompartir = enlacesDe(compartido).length > 0;
 if (compartido) { $('#enlaces').value = enlacesDe(compartido).join('\n') || compartido; history.replaceState(null, '', location.pathname); }
+
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {}); // permite abrir la app sin internet
 
 if (!CFG.url || !CFG.clave) { $('#login').hidden = true; $('#app').dataset.vista = 'login'; aviso('Falta configurar Supabase (archivo config.js).', true); }
 else { sesion = leer('sesion'); mostrar(); }
