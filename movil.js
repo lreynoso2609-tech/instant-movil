@@ -6,8 +6,11 @@ const ES_ENLACE = /(tiktok\.com|instagram\.com|facebook\.com|fb\.watch|fb\.com)\
 const TEXTO = { pendiente: 'En espera', bajando: 'Descargando…', listo: 'Guardado ✓', error: 'No se pudo', duplicado: 'Ya lo tenías' };
 let sesion = null, timer = null;
 
-const guardar = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, JSON.stringify(v)); } catch {} };
-const leer = (k) => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } };
+// "Guardar inicio rápido": marcado, la sesión queda en el teléfono; sin marcar, se olvida al cerrar la app.
+let rapido = true;
+const guardar = (k, v) => { try { const s = k === 'sesion' && !rapido ? sessionStorage : localStorage; v == null ? (localStorage.removeItem(k), sessionStorage.removeItem(k)) : s.setItem(k, JSON.stringify(v)); } catch {} };
+const leer = (k) => { try { return JSON.parse(localStorage.getItem(k) ?? sessionStorage.getItem(k)); } catch { return null; } };
+rapido = leer('rapido') !== false;
 const esc = (t) => String(t ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 function aviso(texto, mal) {
@@ -71,11 +74,31 @@ function enlacesDe(texto) {
 }
 
 $('#formLogin').addEventListener('submit', async (e) => {
-  e.preventDefault(); aviso('Entrando…');
-  const ok = await entrar($('#correo').value.trim(), $('#clave').value).catch(() => null);
+  e.preventDefault(); aviso('');
+  let usuario = $('#correo').value.trim(); if (!usuario.includes('@')) usuario += '@instant.com'; // basta con escribir el usuario
+  rapido = $('#rapido').checked; guardar('rapido', rapido);
+  const b = $('#entrar'); b.classList.add('cargando'); b.disabled = true; b.textContent = 'Entrando…';
+  const ok = await entrar(usuario, $('#clave').value).catch(() => null);
+  b.classList.remove('cargando'); b.disabled = false; b.textContent = 'Entrar';
   if (ok === null) return aviso('No hay conexión. Revisa tu internet e inténtalo otra vez.', true);
-  if (!ok) return aviso('Correo o contraseña incorrectos.', true);
+  if (!ok) return aviso('Usuario o contraseña incorrectos. Toca el ojo para ver lo que escribiste.', true);
+  guardar('usuario', rapido ? $('#correo').value.trim() : null);
   $('#clave').value = ''; aviso(''); mostrar();
+});
+// El usuario se recuerda si dejaste marcado "Guardar inicio rápido".
+$('#rapido').checked = rapido; { const u = leer('usuario'); if (u && rapido) $('#correo').value = u; }
+$('#ojo').addEventListener('click', (e) => {
+  const ver = $('#clave').type === 'password'; $('#clave').type = ver ? 'text' : 'password';
+  e.currentTarget.setAttribute('aria-pressed', String(ver)); e.currentTarget.setAttribute('aria-label', ver ? 'Ocultar contraseña' : 'Mostrar contraseña');
+});
+
+// Botón de pegar: lee lo que copiaste, lo pone y lo guarda (sin mantener pulsado ni elegir "Pegar").
+$('#pegar').addEventListener('click', async () => {
+  let t = '';
+  try { t = await navigator.clipboard.readText(); } catch { return aviso('No pude leer lo copiado. Permite "Pegar" cuando el teléfono lo pida, o mantén pulsado el cuadro y elige Pegar.', true); }
+  const l = enlacesDe(t);
+  if (!l.length) return aviso('No hay ningún enlace de TikTok, Instagram o Facebook copiado. Copia el enlace del video y vuelve a tocar este botón.', true);
+  $('#enlaces').value = l.join('\n'); $('#formEnlaces').requestSubmit();
 });
 
 // ¿Ya lo tienes? Se revisa aquí mismo, al instante, contra tu biblioteca y tus envíos anteriores (sin esperar a la nube).
