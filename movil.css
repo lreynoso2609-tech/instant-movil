@@ -19,7 +19,9 @@ input:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px soli
 .salir{min-height:44px;padding:0 14px;background:none;border:1px solid var(--line-hi);border-radius:10px;color:var(--soft);font:inherit}
 .lista{list-style:none;padding:0;display:grid;gap:8px}
 .item{display:grid;gap:4px;padding:12px 14px;border-radius:10px;background:var(--raise);border:1px solid var(--line)}
-.item .en{word-break:break-all;font-size:14px}
+.item .en{display:grid;gap:2px;min-width:0}
+.item .en b{font:600 15px var(--body)}
+.item .en small{font-size:12px;color:var(--soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .item .estado{display:flex;justify-content:space-between;gap:10px;font-size:13px;color:var(--soft)}
 .pill{white-space:nowrap;flex:none;align-self:flex-start;padding:2px 10px;border-radius:99px;font-size:12px;font-weight:700;background:var(--surface);color:var(--soft)}
 .pill.listo{background:rgba(57,255,106,.14);color:var(--accent)}
@@ -27,6 +29,8 @@ input:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px soli
 .pill.error{color:var(--bad);background:rgba(255,107,107,.1)}
 .aviso{padding:12px 14px;border-radius:10px;background:var(--raise);border-left:3px solid var(--accent);text-wrap:pretty}
 .aviso.mal{border-left-color:#ff6b6b}
+/* Dentro de la app el aviso flota abajo para que siempre se vea (toca para cerrar) */
+.app[data-vista="panel"] .aviso{position:fixed;z-index:20;left:16px;right:16px;bottom:max(16px,env(safe-area-inset-bottom));max-width:528px;margin:0 auto;background:var(--surface);border:1px solid var(--line-hi);border-left-width:3px;box-shadow:0 12px 36px rgba(0,0,0,.7)}
 .vacio{text-wrap:pretty}
 [hidden]{display:none!important}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -68,3 +72,6 @@ input:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px soli
 .pg.busca .barra i::after{content:"";position:absolute;inset:0;width:50px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);animation:brillo 1.4s linear infinite}
 @keyframes brillo{from{transform:translateX(-50px)}to{transform:translateX(500px)}}
 .pg-n{font:600 13px var(--body);font-variant-numeric:tabular-nums;color:var(--accent);min-width:3.2em;text-align:right}
+
+/* Franja de sin conexión */
+.sinRed{padding:10px 14px;border-radius:10px;background:var(--raise);border-left:3px solid #ffb21f;color:var(--text);font-size:14px;text-wrap:pretty}
