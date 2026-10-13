@@ -53,7 +53,7 @@ function itemHtml(x) {
   const pct = x.estado === 'bajando' ? +((/(\d+) %/.exec(x.mensaje || '') || [])[1] || 0) : null;
   const texto = x.estado === 'pendiente' ? `${hace(x.creado)} · la nube lo recoge en segundos` : (x.mensaje || '');
   const barra = x.estado === 'pendiente' || x.estado === 'bajando'
-    ? `<div class="pg" data-id="${x.id}" data-t="${pct ?? 0}" data-auto="${x.estado === 'pendiente' ? new Date(x.creado).getTime() : ''}"><div class="barra"><i></i></div><b class="pg-n">0 %</b></div>` : '';
+    ? `<div class="pg ${x.estado === 'pendiente' ? 'busca' : ''}" data-id="${x.id}" data-t="${pct ?? 0}" data-auto="${x.estado === 'pendiente' ? new Date(x.creado).getTime() : ''}"><div class="barra"><i></i>${x.estado === 'pendiente' ? '' : '<s class="cometa"></s>'}</div><b class="pg-n">0 %</b></div>` : '';
   return `<li class="item"><span class="en">${esc(x.enlace)}</span>
     <span class="estado"><span class="pill ${esc(x.estado)}">${TEXTO[x.estado] || esc(x.estado)}</span><span class="txt">${esc(texto)}</span></span>${barra}</li>`;
 }
@@ -97,10 +97,13 @@ $('#salir').addEventListener('click', salir);
 // Si llegas desde "Compartir → Instant" (Android con la app instalada), el enlace ya viene puesto.
 const q = new URLSearchParams(location.search);
 const compartido = [q.get('url'), q.get('text'), q.get('title')].filter(Boolean).join(' ');
+const vienesDeCompartir = enlacesDe(compartido).length > 0;
 if (compartido) { $('#enlaces').value = enlacesDe(compartido).join('\n') || compartido; history.replaceState(null, '', location.pathname); }
 
 if (!CFG.url || !CFG.clave) { $('#login').hidden = true; $('#app').dataset.vista = 'login'; aviso('Falta configurar Supabase (archivo config.js).', true); }
 else { sesion = leer('sesion'); mostrar(); }
+// Si lo mandaste con "Compartir → Instant" y ya habías entrado, se guarda solo (sin pulsar nada).
+if (sesion && vienesDeCompartir) $('#formEnlaces').requestSubmit();
 
 // Barras con animación continua (igual que en la PC). Cada envío recuerda su valor mostrado para no retroceder al redibujar la lista.
 const vistos = new Map(); let ultimoCuadro = performance.now();
@@ -118,6 +121,7 @@ function animarBarras(ahora) {
     v = v < meta ? Math.min(meta, v + paso) : meta;
     vistos.set(id, v);
     b.querySelector('i').style.transform = 'scaleX(' + v / 100 + ')';
+    const c = b.querySelector('.cometa'); if (c) { c.style.left = v + '%'; b.classList.toggle('llego', v >= 99.5); }
     const n = Math.round(v) + ' %', el = b.querySelector('.pg-n'); if (el.textContent !== n) el.textContent = n;
   });
   requestAnimationFrame(animarBarras);
