@@ -37,7 +37,13 @@ select,.fav{font:inherit;font-size:15px;color:var(--text);background:#0f1611;bor
 .chips span{padding:4px 10px;border-radius:99px;background:var(--raise);border:1px solid var(--line-hi);font-size:13px}
 a.btn{display:grid;place-items:center;text-decoration:none}
 .nota{font-size:13px;text-align:center}
-.enlaceChico{justify-self:center;display:grid;place-items:center;min-height:40px;padding:0 16px;border:1px solid var(--line-hi);border-radius:10px;color:var(--soft);font-size:14px;text-decoration:none}
+#fichaCuerpo{display:grid;gap:12px}
+.enlaceChico{justify-self:center;display:inline-flex;align-items:center;gap:8px;min-height:40px;margin-top:6px;padding:0 16px;border:1px solid var(--line-hi);border-radius:10px;color:var(--soft);font-size:14px;text-decoration:none}
+.enlaceChico svg{flex:none}
+/* Etiqueta de la red sobre cada portada, con los colores de cada una */
+.tarjeta em.r-facebook{background:#1877f2;color:#fff}
+.tarjeta em.r-instagram{background:linear-gradient(45deg,#feda75,#fa7e1e 28%,#d62976 58%,#962fbf 82%,#4f5bd5);color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.35)}
+.tarjeta em.r-tiktok{background:#000;color:#fff;box-shadow:-1.5px -1.5px 0 #25f4ee,1.5px 1.5px 0 #fe2c55}
 
 /* Login mínimo: usuario, contraseña con ojo y "guardar inicio rápido" */
 .campoClave{position:relative;display:block}
