@@ -78,6 +78,32 @@ $('#formLogin').addEventListener('submit', async (e) => {
   $('#clave').value = ''; aviso(''); mostrar();
 });
 
+// ¿Ya lo tienes? Se revisa aquí mismo, al instante, contra tu biblioteca y tus envíos anteriores (sin esperar a la nube).
+const limpiar = (u) => u.toLowerCase().replace(/^https?:\/\/(www\.|m\.|web\.)?/, '').split(/[?#]/)[0].replace(/\/+$/, '');
+function idDe(u) {
+  let m;
+  if ((m = /tiktok\.com\/.*\/(?:video|photo)\/(\d+)/i.exec(u))) return 'tiktok:' + m[1];
+  if ((m = /instagram\.com\/(?:[^/]+\/)?(?:reels?|p|tv)\/([\w-]+)/i.exec(u))) return 'instagram:' + m[1];
+  if ((m = /facebook\.com\/(?:.*\/)?(?:reel|videos?)\/(\d+)/i.exec(u)) || (m = /facebook\.com\/watch\/?\?.*\bv=(\d+)/i.exec(u))) return 'facebook:' + m[1];
+  return null;
+}
+async function repetidos(lista) {
+  const [b, c] = await Promise.all([
+    llamar('/rest/v1/biblioteca?select=id,enlace,cuenta&limit=2000', { token: sesion.token }),
+    llamar('/rest/v1/cola?select=enlace&estado=in.(listo,pendiente,bajando)&limit=1000', { token: sesion.token }),
+  ]);
+  const porId = new Map(), porEnlace = new Map();
+  (b.ok ? b.datos : []).forEach((x) => { porId.set(x.id, x); if (x.enlace) porEnlace.set(limpiar(x.enlace), x); });
+  const enviados = new Set((c.ok ? c.datos : []).map((x) => limpiar(x.enlace)));
+  const rep = new Map();
+  for (const u of lista) {
+    const x = porId.get(idDe(u)) || porEnlace.get(limpiar(u));
+    if (x) rep.set(u, x.cuenta ? `está en tu biblioteca (@${x.cuenta})` : 'está en tu biblioteca');
+    else if (enviados.has(limpiar(u))) rep.set(u, 'ya lo enviaste antes');
+  }
+  return rep;
+}
+
 $('#formEnlaces').addEventListener('submit', async (e) => {
   e.preventDefault();
   const lista = enlacesDe($('#enlaces').value);
@@ -85,9 +111,14 @@ $('#formEnlaces').addEventListener('submit', async (e) => {
   const b = e.target.querySelector('button'); b.disabled = true;
   try {
     if (!(await renovar())) return;
-    const r = await llamar('/rest/v1/cola', { metodo: 'POST', token: sesion.token, cuerpo: lista.map((enlace) => ({ enlace })) });
+    const rep = await repetidos(lista).catch(() => new Map());
+    const nuevas = lista.filter((u) => !rep.has(u));
+    const aviRep = [...rep.values()][0];
+    if (!nuevas.length) { $('#enlaces').value = ''; return aviso(lista.length > 1 ? `Ya los tenías: los ${lista.length} enlaces ya estaban guardados.` : `Ya lo tenías: ${aviRep}. No hace falta mandarlo otra vez.`); }
+    const r = await llamar('/rest/v1/cola', { metodo: 'POST', token: sesion.token, cuerpo: nuevas.map((enlace) => ({ enlace })) });
     if (!r.ok) return aviso('No se pudo guardar. Inténtalo de nuevo en un momento.', true);
-    $('#enlaces').value = ''; aviso(`Listo: ${lista.length} enlace${lista.length > 1 ? 's' : ''} en espera. Se descargan solos en unos minutos.`);
+    $('#enlaces').value = '';
+    aviso(`Listo: ${nuevas.length} enlace${nuevas.length > 1 ? 's' : ''} en espera. Se descargan solos en unos minutos.` + (rep.size ? ` (${rep.size} ya lo tenías y no se mandó.)` : ''));
     cargarLista();
   } catch { aviso('No hay conexión. Revisa tu internet e inténtalo otra vez.', true); }
   finally { b.disabled = false; }
