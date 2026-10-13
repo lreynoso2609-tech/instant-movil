@@ -51,7 +51,7 @@ function hace(f) {
 }
 function itemHtml(x) {
   const pct = x.estado === 'bajando' ? +((/(\d+) %/.exec(x.mensaje || '') || [])[1] || 0) : null;
-  const texto = x.estado === 'pendiente' ? `${hace(x.creado)} · la nube lo recoge en unos minutos` : (x.mensaje || '');
+  const texto = x.estado === 'pendiente' ? `${hace(x.creado)} · la nube lo recoge en segundos` : (x.mensaje || '');
   const barra = x.estado === 'pendiente' || x.estado === 'bajando'
     ? `<div class="pg" data-id="${x.id}" data-t="${pct ?? 0}" data-auto="${x.estado === 'pendiente' ? new Date(x.creado).getTime() : ''}"><div class="barra"><i></i></div><b class="pg-n">0 %</b></div>` : '';
   return `<li class="item"><span class="en">${esc(x.enlace)}</span>
@@ -109,9 +109,13 @@ function animarBarras(ahora) {
   document.querySelectorAll('.pg[data-id]').forEach((b) => {
     const id = b.dataset.id, auto = +b.dataset.auto;
     // En espera: sube despacio hacia ~90 % según el tiempo desde que lo enviaste; descargando: el % real.
-    const meta = auto ? 90 * (1 - Math.exp(-(Date.now() - auto) / 45000)) : +b.dataset.t || 0;
+    // El avance real llega a saltos (cada ~4 s): entre avisos la barra sigue avanzando despacio, y los saltos se recorren poco a poco (1, 2, 3…).
+    const real = +b.dataset.t || 0, ahoraMs = Date.now();
+    if (b._real !== real) { b._real = real; b._cambio = ahoraMs; }
+    const meta = auto ? 90 * (1 - Math.exp(-(ahoraMs - auto) / 45000)) : Math.min(99, real + Math.min(12, (ahoraMs - b._cambio) / 1000 * 1.2));
     let v = vistos.has(id) ? vistos.get(id) : 0;
-    v += (meta - v) * (1 - Math.exp(-dt * 4)); if (Math.abs(meta - v) < 0.04) v = meta;
+    const paso = Math.min(10, Math.max(0.6, Math.abs(meta - v) * 0.5)) * dt; // velocidad limitada (máx. 10 % por segundo): nunca salta de golpe
+    v = v < meta ? Math.min(meta, v + paso) : meta;
     vistos.set(id, v);
     b.querySelector('i').style.transform = 'scaleX(' + v / 100 + ')';
     const n = Math.round(v) + ' %', el = b.querySelector('.pg-n'); if (el.textContent !== n) el.textContent = n;
