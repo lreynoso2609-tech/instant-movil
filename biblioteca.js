@@ -10,12 +10,15 @@ function pestana(nombre) {
   $('#vistaEnviar').hidden = nombre !== 'enviar';
   $('#vistaBib').hidden = nombre !== 'biblioteca';
   document.querySelectorAll('.tabs button').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.tab === nombre)));
-  if (nombre === 'biblioteca' && !cargada) cargarBiblioteca();
+  guardar('pestana', nombre); // al recargar, vuelve a la pestaña donde estabas
+  clearInterval(refrescoBib);
+  if (nombre === 'biblioteca') { cargarBiblioteca(); refrescoBib = setInterval(cargarBiblioteca, 30000); } // siempre trae lo último
 }
+let refrescoBib = null;
 
 async function cargarBiblioteca() {
   if (!(await renovar())) return;
-  $('#bibEstado').hidden = false; $('#bibEstado').textContent = 'Cargando tu biblioteca…';
+  if (!cargada) { $('#bibEstado').hidden = false; $('#bibEstado').textContent = 'Cargando tu biblioteca…'; }
   const r = await llamar('/rest/v1/biblioteca?select=*&order=descargado.desc&limit=1000', { token: sesion.token }).catch(() => null);
   if (!r || !r.ok) {
     $('#bibEstado').textContent = r && r.status === 404
@@ -84,3 +87,6 @@ $('#rejilla').addEventListener('click', (e) => { const t = e.target.closest('.ta
 $('#fichaCerrar').addEventListener('click', cerrarFicha);
 $('#ficha').addEventListener('click', (e) => { if (e.target.id === 'ficha') cerrarFicha(); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('#ficha').hidden) cerrarFicha(); });
+
+// Al abrir o recargar la página, vuelve a la pestaña que estabas viendo.
+if (sesion && leer("pestana") === "biblioteca") pestana("biblioteca");
