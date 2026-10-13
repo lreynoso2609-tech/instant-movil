@@ -52,8 +52,8 @@ function hace(f) {
 function itemHtml(x) {
   const pct = x.estado === 'bajando' ? +((/(\d+) %/.exec(x.mensaje || '') || [])[1] || 0) : null;
   const texto = x.estado === 'pendiente' ? `${hace(x.creado)} · la nube lo recoge en unos minutos` : (x.mensaje || '');
-  const barra = x.estado === 'pendiente' ? '<div class="barra espera"><i></i></div>'
-    : x.estado === 'bajando' ? `<div class="barra"><i style="width:${Math.max(4, pct)}%"></i></div>` : '';
+  const barra = x.estado === 'pendiente' || x.estado === 'bajando'
+    ? `<div class="pg" data-id="${x.id}" data-t="${pct ?? 0}" data-auto="${x.estado === 'pendiente' ? new Date(x.creado).getTime() : ''}"><div class="barra"><i></i></div><b class="pg-n">0 %</b></div>` : '';
   return `<li class="item"><span class="en">${esc(x.enlace)}</span>
     <span class="estado"><span class="pill ${esc(x.estado)}">${TEXTO[x.estado] || esc(x.estado)}</span><span class="txt">${esc(texto)}</span></span>${barra}</li>`;
 }
@@ -101,3 +101,21 @@ if (compartido) { $('#enlaces').value = enlacesDe(compartido).join('\n') || comp
 
 if (!CFG.url || !CFG.clave) { $('#login').hidden = true; $('#app').dataset.vista = 'login'; aviso('Falta configurar Supabase (archivo config.js).', true); }
 else { sesion = leer('sesion'); mostrar(); }
+
+// Barras con animación continua (igual que en la PC). Cada envío recuerda su valor mostrado para no retroceder al redibujar la lista.
+const vistos = new Map(); let ultimoCuadro = performance.now();
+function animarBarras(ahora) {
+  const dt = Math.min(0.1, (ahora - ultimoCuadro) / 1000); ultimoCuadro = ahora;
+  document.querySelectorAll('.pg[data-id]').forEach((b) => {
+    const id = b.dataset.id, auto = +b.dataset.auto;
+    // En espera: sube despacio hacia ~90 % según el tiempo desde que lo enviaste; descargando: el % real.
+    const meta = auto ? 90 * (1 - Math.exp(-(Date.now() - auto) / 45000)) : +b.dataset.t || 0;
+    let v = vistos.has(id) ? vistos.get(id) : 0;
+    v += (meta - v) * (1 - Math.exp(-dt * 4)); if (Math.abs(meta - v) < 0.04) v = meta;
+    vistos.set(id, v);
+    b.querySelector('i').style.transform = 'scaleX(' + v / 100 + ')';
+    const n = Math.round(v) + ' %', el = b.querySelector('.pg-n'); if (el.textContent !== n) el.textContent = n;
+  });
+  requestAnimationFrame(animarBarras);
+}
+requestAnimationFrame(animarBarras);
