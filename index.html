@@ -10,8 +10,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="stylesheet" href="fuentes.css">
-<link rel="stylesheet" href="movil.css?v=9">
-<link rel="stylesheet" href="biblioteca.css?v=9">
+<link rel="stylesheet" href="movil.css?v=11">
+<link rel="stylesheet" href="biblioteca.css?v=11">
 </head>
 <body>
 <main class="app" id="app" data-vista="login">
@@ -37,7 +37,7 @@
 
   <section id="panel" hidden>
     <p class="sinRed" id="sinRed" role="status" hidden>Sin conexión. Estás viendo lo último que había.</p>
-    <nav class="tabs" aria-label="Secciones"><button data-tab="enviar" aria-selected="true">Enviar</button><button data-tab="biblioteca" aria-selected="false">Biblioteca</button></nav>
+    <nav class="tabs" aria-label="Secciones"><button data-tab="enviar" aria-selected="true">Enviar<span class="nEnv" id="nEnv" hidden></span></button><button data-tab="biblioteca" aria-selected="false">Biblioteca</button></nav>
     <div id="vistaEnviar">
     <form id="formEnlaces">
       <label for="enlaces">Pega uno o varios enlaces (TikTok, Instagram o Facebook)</label>
@@ -56,8 +56,14 @@
     <div id="vistaBib" hidden>
       <div class="filtros">
         <input id="buscar" type="search" placeholder="Buscar por cuenta, gancho, etiqueta…" autocomplete="off">
-        <select id="fEstado" aria-label="Estado"></select><select id="fRed" aria-label="Red"></select>
-        <select id="fColeccion" aria-label="Marca"></select><button class="fav" id="fFav" type="button" aria-pressed="false">★ Favoritos</button>
+        <select id="fOrden" aria-label="Ordenar por"><option value="rec">Más recientes</option><option value="vis">Más vistas</option><option value="int">Más interacción</option></select>
+        <details class="plegable" id="plegable"><summary>Filtros<span id="nFiltros" hidden></span></summary>
+          <div class="plegableCuerpo">
+            <select id="fEstado" aria-label="Estado"></select><select id="fRed" aria-label="Red"></select>
+            <select id="fColeccion" aria-label="Marca"></select><button class="fav" id="fFav" type="button" aria-pressed="false">★ Favoritos</button>
+            <button class="limpiar" id="fLimpiar" type="button">Quitar filtros</button>
+          </div>
+        </details>
       </div>
       <p class="soft bibCuenta" id="bibCuenta"></p>
       <p class="soft vacio" id="bibEstado" hidden></p>
@@ -65,12 +71,12 @@
     </div>
   </section>
 
-  <div class="ficha" id="ficha" hidden><div class="fichaPanel" role="dialog" aria-modal="true" aria-label="Ficha"><button class="salir" id="fichaCerrar">Cerrar</button><div id="fichaCuerpo"></div></div></div>
+  <div class="ficha" id="ficha" hidden><div class="fichaPanel" id="fichaPanelEl" role="dialog" aria-modal="true" aria-label="Ficha"><button class="salir" id="fichaCerrar">Cerrar</button><div id="fichaCuerpo"></div></div></div>
 
   <p class="aviso" id="aviso" role="status" hidden></p>
 </main>
-<script src="config.js?v=9"></script>
-<script src="movil.js?v=9"></script>
-<script src="biblioteca.js?v=9"></script>
+<script src="config.js?v=11"></script>
+<script src="movil.js?v=11"></script>
+<script src="biblioteca.js?v=11"></script>
 </body>
 </html>
