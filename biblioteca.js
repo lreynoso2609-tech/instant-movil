@@ -70,13 +70,22 @@ function llenarFiltros() {
 
 function filtradas() {
   const q = $('#buscar').value.trim().toLowerCase(), est = $('#fEstado').value, red = $('#fRed').value, col = $('#fColeccion').value, fav = $('#fFav').getAttribute('aria-pressed') === 'true';
-  return todas.filter((x) =>
+  const l = todas.filter((x) =>
     (!est || x.estado === est) && (!red || x.red === red) && (!col || x.coleccion === col) && (!fav || x.favorito) &&
     (!q || [x.cuenta, x.copy, x.hook, x.coleccion, x.sonido, ...(x.etiquetas || [])].join(' ').toLowerCase().includes(q)));
+  const o = $('#fOrden').value, inter = (x) => (x.vistas ? ((x.likes || 0) + (x.comentarios || 0) + (x.compartidos || 0)) / x.vistas : 0);
+  if (o === 'vis') l.sort((a, b) => (b.vistas || 0) - (a.vistas || 0));
+  else if (o === 'int') l.sort((a, b) => inter(b) - inter(a));
+  return l;
+}
+// El botón "Filtros" muestra cuántos hay puestos, para que no se olviden.
+function contarFiltros() {
+  const n = ['fEstado', 'fRed', 'fColeccion'].filter((id) => $('#' + id).value).length + ($('#fFav').getAttribute('aria-pressed') === 'true' ? 1 : 0);
+  $('#nFiltros').hidden = !n; $('#nFiltros').textContent = n; $('#fLimpiar').hidden = !n;
 }
 
 function pintar() {
-  const l = filtradas();
+  const l = filtradas(); contarFiltros();
   $('#bibEstado').hidden = l.length > 0;
   $('#bibEstado').textContent = todas.length ? 'Nada coincide con tu búsqueda. Prueba quitar algún filtro.' : 'Tu biblioteca está vacía.';
   $('#bibCuenta').textContent = todas.length ? `${l.length} de ${todas.length}` : '';
@@ -101,10 +110,13 @@ function ficha(id) {
     ${x.copy ? `<h4>Texto original</h4><p class="copy">${esc(x.copy)}</p>` : ''}
     ${x.sonido ? `<p class="soft">♪ ${esc(x.sonido)}</p>` : ''}
     ${x.audio ? `<button type="button" class="btnAudio" data-ruta="${esc(x.audio)}">♪ Escuchar la pista de audio</button><div class="cajaAudio"></div>` : ''}
+    <p class="soft nota">${x.estado === 'En la nube' ? 'El video está en tu Drive (carpeta "Instant nube"). Aquí solo se ve la ficha.' : 'El video completo está en tu PC (Instant). Aquí solo se ve la ficha.'}</p>
+    <div class="fichaAcc">
     ${/^https:\/\//.test(x.enlace || '') ? `<a class="btn" href="${esc(x.enlace)}" target="_blank" rel="noopener noreferrer">Ver original</a>` : ''}
     <a class="enlaceChico" href="https://drive.google.com/drive/search?q=${encodeURIComponent(String(x.id).split(':')[1] || '')}" target="_blank" rel="noopener noreferrer">${LOGO_DRIVE}<span>Ver en Drive</span></a>
-    <p class="soft nota">${x.estado === 'En la nube' ? 'El video está en tu Drive (carpeta "Instant nube"). Aquí solo se ve la ficha.' : 'El video completo está en tu PC (Instant). Aquí solo se ve la ficha.'}</p>`;
-  $('#ficha').hidden = false; document.body.style.overflow = 'hidden'; $('#fichaCerrar').focus();
+    </div>`;
+  quienAbrio = document.activeElement; history.pushState({ ficha: 1 }, ''); // así el botón Atrás del celular cierra la ficha
+  $('#ficha').hidden = false; document.body.style.overflow = 'hidden'; $('#fichaPanelEl').scrollTop = 0; $('#fichaCerrar').focus();
 }
 // La pista de audio se baja solo al tocar el botón (privada: solo con tu sesión).
 $('#fichaCuerpo').addEventListener('click', async (e) => {
@@ -117,12 +129,28 @@ $('#fichaCuerpo').addEventListener('click', async (e) => {
     caja.innerHTML = `<audio controls autoplay src="${URL.createObjectURL(await r.blob())}"></audio>`; btn.hidden = true;
   } catch { btn.disabled = false; btn.textContent = 'No se pudo cargar. Toca para reintentar'; }
 });
-function cerrarFicha() { $('#ficha').hidden = true; document.body.style.overflow = ''; }
+let quienAbrio = null;
+function ocultarFicha() {
+  $('#ficha').hidden = true; document.body.style.overflow = '';
+  if (quienAbrio && document.contains(quienAbrio)) quienAbrio.focus({ preventScroll: true }); quienAbrio = null;
+}
+function cerrarFicha() { if (history.state && history.state.ficha) history.back(); else ocultarFicha(); }
+window.addEventListener('popstate', () => { if (!$('#ficha').hidden) ocultarFicha(); });
+// El foco se queda dentro de la ficha mientras está abierta.
+$('#ficha').addEventListener('keydown', (e) => {
+  if (e.key !== 'Tab') return;
+  const f = [...$('#ficha').querySelectorAll('button:not([disabled]),a[href],audio')].filter((el) => el.offsetParent !== null);
+  if (!f.length) return;
+  const a = f[0], z = f[f.length - 1];
+  if (e.shiftKey && document.activeElement === a) { e.preventDefault(); z.focus(); }
+  else if (!e.shiftKey && document.activeElement === z) { e.preventDefault(); a.focus(); }
+});
 
 document.addEventListener('visibilitychange', () => { if (!document.hidden && sesion && !$('#vistaBib').hidden) cargarBiblioteca(); });
 document.querySelectorAll('.tabs button').forEach((b) => b.addEventListener('click', () => pestana(b.dataset.tab)));
-['buscar', 'fEstado', 'fRed', 'fColeccion'].forEach((id) => $('#' + id).addEventListener('input', pintar));
+['buscar', 'fOrden', 'fEstado', 'fRed', 'fColeccion'].forEach((id) => $('#' + id).addEventListener('input', pintar));
 $('#fFav').addEventListener('click', (e) => { e.currentTarget.setAttribute('aria-pressed', String(e.currentTarget.getAttribute('aria-pressed') !== 'true')); pintar(); });
+$('#fLimpiar').addEventListener('click', () => { ['fEstado', 'fRed', 'fColeccion'].forEach((id) => { $('#' + id).value = ''; }); $('#fFav').setAttribute('aria-pressed', 'false'); pintar(); });
 $('#rejilla').addEventListener('click', (e) => { const t = e.target.closest('.tarjeta'); if (t) ficha(t.dataset.id); });
 $('#fichaCerrar').addEventListener('click', cerrarFicha);
 $('#ficha').addEventListener('click', (e) => { if (e.target.id === 'ficha') cerrarFicha(); });
