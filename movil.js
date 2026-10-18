@@ -4,7 +4,7 @@ const $ = (s) => document.querySelector(s);
 const CFG = window.INSTANT || {};
 const ES_ENLACE = /(tiktok\.com|instagram\.com|facebook\.com|fb\.watch|fb\.com)\//i;
 const TEXTO = { pendiente: 'En espera', bajando: 'Descargando…', listo: 'Guardado ✓', error: 'No se pudo', duplicado: 'Ya lo tenías' };
-let sesion = null, timer = null, proximo = 6000, ultimoHtml = '';
+let sesion = null, timer = null, proximo = 6000, ultimoHtml = '', listosAntes = null;
 
 // "Guardar inicio rápido": marcado, la sesión queda en el teléfono; sin marcar, se olvida al cerrar la app.
 let rapido = true;
@@ -46,7 +46,7 @@ async function renovar() {
   sesion = { token: r.datos.access_token, refresco: r.datos.refresh_token, vence: Date.now() + (r.datos.expires_in - 60) * 1000 };
   guardar('sesion', sesion); return true;
 }
-function salir(motivo) { sesion = null; guardar('sesion', null); clearTimeout(timer); ultimoHtml = ''; mostrar(); aviso(motivo || '', true); }
+function salir(motivo) { listosAntes = null; sesion = null; guardar('sesion', null); clearTimeout(timer); ultimoHtml = ''; mostrar(); aviso(motivo || '', true); }
 // Franja "sin conexión": se muestra cuando falla internet y se quita sola al volver.
 function hayRed(si) { $('#sinRed').hidden = si; }
 window.addEventListener('offline', () => hayRed(false));
@@ -77,11 +77,11 @@ function nombreEnlace(u) {
 function itemHtml(x) {
   const pct = x.estado === 'bajando' ? +((/(\d+) %/.exec(x.mensaje || '') || [])[1] || 0) : null;
   const texto = x.estado === 'pendiente' ? `${hace(x.creado)} · la nube lo recoge en segundos`
-    : x.estado === 'error' ? `${x.mensaje || 'No se pudo.'} Vuelve a mandarlo; si falla otra vez, bájalo desde la PC.` : (x.mensaje || '');
+    : x.estado === 'error' ? `${x.mensaje || 'No se pudo.'} Si falla otra vez, bájalo desde la PC.` : (x.mensaje || '');
   const barra = x.estado === 'pendiente' || x.estado === 'bajando'
     ? `<div class="pg ${x.estado === 'pendiente' ? 'busca' : ''}" data-id="${x.id}" data-t="${pct ?? 0}" data-auto="${x.estado === 'pendiente' ? new Date(x.creado).getTime() : ''}"><div class="barra"><i></i>${x.estado === 'pendiente' ? '' : '<s class="cometa"></s>'}</div><b class="pg-n">0 %</b></div>` : '';
   return `<li class="item"><span class="en"><b>${esc(nombreEnlace(x.enlace))}</b><small>${esc(x.enlace)}</small></span>
-    <span class="estado"><span class="pill ${esc(x.estado)}">${TEXTO[x.estado] || esc(x.estado)}</span><span class="txt">${esc(texto)}</span></span>${barra}</li>`;
+    <span class="estado"><span class="pill ${esc(x.estado)}">${TEXTO[x.estado] || esc(x.estado)}</span><span class="txt">${esc(texto)}</span></span>${barra}${x.estado === 'error' ? `<button type="button" class="reint" data-enlace="${esc(x.enlace)}">Reintentar</button>` : ''}</li>`;
 }
 
 async function cargarLista() {
@@ -90,7 +90,13 @@ async function cargarLista() {
   if (!r) return hayRed(false);
   hayRed(true);
   if (!r.ok) return;
-  proximo = r.datos.some((x) => x.estado === 'pendiente' || x.estado === 'bajando') ? 5000 : 20000;
+  const enProceso = r.datos.filter((x) => x.estado === 'pendiente' || x.estado === 'bajando').length;
+  proximo = enProceso ? 5000 : 20000;
+  const n = $('#nEnv'); n.hidden = !enProceso; n.textContent = enProceso; n.setAttribute('aria-label', enProceso + ' en proceso');
+  // Aviso cuando algo termina de guardarse (se ve en cualquier pestaña).
+  const listos = new Set(r.datos.filter((x) => x.estado === 'listo').map((x) => x.id));
+  if (listosAntes) { const nuevos = [...listos].filter((id) => !listosAntes.has(id)).length; if (nuevos) aviso(nuevos > 1 ? `Ya se guardaron ${nuevos} videos en tu biblioteca ✓` : 'Ya se guardó un video en tu biblioteca ✓'); }
+  listosAntes = listos;
   $('#vacio').hidden = r.datos.length > 0;
   const html = r.datos.map(itemHtml).join('');
   if (html !== ultimoHtml) { $('#lista').innerHTML = html; ultimoHtml = html; } // solo se redibuja si algo cambió
@@ -172,6 +178,20 @@ $('#formEnlaces').addEventListener('submit', async (e) => {
     cargarLista();
   } catch { aviso('No hay conexión. Revisa tu internet e inténtalo otra vez.', true); }
   finally { b.disabled = false; }
+});
+// "Reintentar": vuelve a mandar el enlace que falló (si ya está en tu biblioteca, te lo dice).
+$('#lista').addEventListener('click', async (e) => {
+  const b = e.target.closest('.reint'); if (!b) return;
+  b.disabled = true; b.textContent = 'Enviando…';
+  try {
+    if (!(await renovar())) return;
+    const rep = await repetidos([b.dataset.enlace]).catch(() => new Map());
+    if (rep.size) { aviso(`Ya lo tenías: ${[...rep.values()][0]}.`); return; }
+    const r = await llamar('/rest/v1/cola', { metodo: 'POST', token: sesion.token, cuerpo: [{ enlace: b.dataset.enlace }] });
+    if (!r.ok) throw 0;
+    aviso('Listo: lo mandé otra vez. Se descarga solo en unos minutos.'); cargarLista();
+  } catch { aviso('No se pudo reenviar. Revisa tu internet e inténtalo de nuevo.', true); }
+  finally { b.disabled = false; b.textContent = 'Reintentar'; }
 });
 $('#salir').addEventListener('click', () => { if (confirm('¿Cerrar la sesión? Tendrás que volver a entrar.')) salir(); });
 
