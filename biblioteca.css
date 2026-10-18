@@ -66,3 +66,24 @@ label.rapido input{width:22px;height:22px;min-height:0;padding:0;accent-color:va
 .campoEnlaces textarea{padding-right:60px}
 .pegar{position:absolute;right:8px;top:8px;width:44px;height:44px;display:grid;place-items:center;border-radius:10px;background:var(--raise);border:1px solid var(--line-hi);color:var(--accent);transition:transform .12s}
 .pegar:active{transform:scale(.92)}
+
+/* Auditoría: acciones de la ficha siempre a la vista, filtros plegables, punto en "Enviar" */
+.fichaImg{max-height:200px}
+.fichaAcc{position:sticky;bottom:calc(-1 * max(24px,env(safe-area-inset-bottom)));display:flex;gap:8px;align-items:center;margin:0 -16px calc(-1 * max(24px,env(safe-area-inset-bottom)));padding:12px 16px max(14px,env(safe-area-inset-bottom));background:linear-gradient(transparent,var(--surface) 22%);z-index:2}
+.fichaAcc .btn{flex:1;min-width:0}
+.fichaAcc .enlaceChico{margin:0;flex:none;padding:0 12px}
+.tabs{position:sticky;top:max(8px,env(safe-area-inset-top));z-index:6;box-shadow:0 8px 20px -10px #000}
+.filtros{align-items:start}
+.filtros input{grid-column:1/-1}
+.filtros #fOrden{grid-column:1}
+.plegable{grid-column:2;position:relative}
+.plegable summary{display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;border:1px solid var(--line-hi);border-radius:10px;background:#0f1611;color:var(--text);font:600 15px var(--body);list-style:none;cursor:pointer}
+.plegable summary::-webkit-details-marker{display:none}
+.plegable[open] summary{border-color:var(--accent);color:var(--accent)}
+.plegable #nFiltros,.nEnv{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 6px;border-radius:99px;background:var(--accent);color:var(--on-accent);font:700 12px/1 var(--display)}
+.nEnv{margin-left:8px;vertical-align:middle}
+.plegableCuerpo{display:grid;gap:8px;margin-top:8px}
+.limpiar{min-height:44px;border:1px solid var(--line-hi);border-radius:10px;background:none;color:var(--soft);font:inherit;font-size:15px}
+.reint{justify-self:start;min-height:44px;margin-top:6px;padding:0 18px;border:1px solid var(--accent);border-radius:10px;background:rgba(57,255,106,.1);color:var(--accent);font:600 15px var(--body)}
+.plegable[open]{grid-column:1/-1;grid-row:3}
+.filtros #fOrden{grid-row:2}
