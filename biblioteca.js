@@ -17,6 +17,12 @@ function fechaCorta(iso) {
   return d.toLocaleDateString('es', { day: 'numeric', month: 'short', ...(d.getFullYear() !== hoy.getFullYear() ? { year: 'numeric' } : {}) }).replace('.', '');
 }
 
+// Fecha y hora de descarga completa (para la ficha abierta)
+function fechaLarga(iso) {
+  const d = new Date(iso); if (isNaN(d)) return '';
+  return d.toLocaleString('es', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace('.', '');
+}
+
 function pestana(nombre) {
   $('#vistaEnviar').hidden = nombre !== 'enviar';
   $('#vistaBib').hidden = nombre !== 'biblioteca';
@@ -99,16 +105,16 @@ function pintar() {
   $('#bibEstado').textContent = todas.length ? 'Nada coincide con tu búsqueda. Prueba quitar algún filtro.' : 'Tu biblioteca está vacía.';
   $('#bibCuenta').textContent = todas.length ? `${l.length} de ${todas.length}` : '';
   $('#rejilla').innerHTML = l.map((x) => `<li><button class="tarjeta" data-id="${esc(x.id)}">
-    <span class="foto">${x.portada ? `<img src="${esc(x.portada)}" alt="" loading="lazy">` : ''}<em class="r-${esc(x.red)}">${esc(REDES[x.red] || x.red)}</em>${x.favorito ? '<b aria-label="Favorito">★</b>' : ''}</span>
+    <span class="foto">${x.portada ? `<img src="${esc(x.portada)}" alt="" loading="lazy">` : ''}<em class="r-${esc(x.red)}">${esc(REDES[x.red] || x.red)}</em>${x.favorito ? '<b aria-label="Favorito">★</b>' : ''}${x.descargado ? `<small class="fecha" title="Descargado">↓ ${fechaCorta(x.descargado)}</small>` : ''}</span>
     <span class="cuenta">@${esc(x.cuenta || '')}</span><span class="gancho">${esc(x.hook || x.copy || '')}</span>
-    ${x.vistas ? `<span class="vistas">${fmt(x.vistas)} vistas</span>` : ''}${x.descargado ? `<span class="bajado">Bajado ${fechaCorta(x.descargado)}</span>` : ''}</button></li>`).join('');
+    ${x.vistas ? `<span class="vistas">${fmt(x.vistas)} vistas</span>` : ''}</button></li>`).join('');
 }
 
 function ficha(id) {
   const x = todas.find((y) => y.id === id); if (!x) return;
   const met = [['Vistas', x.vistas], ['Likes', x.likes], ['Comentarios', x.comentarios], ['Compartidos', x.compartidos], ['Guardados', x.guardados]]
     .filter((m) => m[1] != null).map((m) => `<div><b>${fmt(m[1])}</b><span>${m[0]}</span></div>`).join('');
-  const datos = [x.coleccion && `Marca: ${x.coleccion}`, x.estado, x.duracion && `${x.duracion} s`, fechaTxt(x.fecha_publicacion)].filter(Boolean).map(esc).join(' · ');
+  const datos = [x.coleccion && `Marca: ${x.coleccion}`, x.estado, x.duracion && `${x.duracion} s`, fechaTxt(x.fecha_publicacion), x.descargado && ('Descargado ' + fechaLarga(x.descargado))].filter(Boolean).map(esc).join(' · ');
   $('#fichaCuerpo').innerHTML = `
     ${x.portada ? `<img class="fichaImg" src="${esc(x.portada)}" alt="">` : ''}
     <h3>@${esc(x.cuenta || '')} <small>${esc(REDES[x.red] || x.red)}</small></h3>
