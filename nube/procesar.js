@@ -187,7 +187,7 @@ async function procesar(fila) {
   const previa = await buscarCarpeta('_' + id, null, true);
   // «ya lo tenías» solo si de verdad quedó el video: si una subida anterior se cortó, se completa
   const completa = previa && ((await (await drive('https://www.googleapis.com/drive/v3/files?fields=files(id)&pageSize=1&q=' + encodeURIComponent(`'${previa.id}' in parents and name contains '.mp4' and trashed=false`))).json()).files.length > 0);
-  if (completa) return ['duplicado', 'Ya lo tenías: este video ya se había enviado antes desde el celular.'];
+  if (completa) return ['duplicado', 'Ya lo tenías: este video ya se había enviado antes desde el celular. [[' + r + ':' + id + ']]'];
 
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'instant-'));
   try {
