@@ -9,6 +9,14 @@ const LOGO_DRIVE = '<svg viewBox="0 0 87.3 78" width="20" height="18" aria-hidde
 const fmt = (n) => n == null ? '–' : n >= 1e6 ? (n / 1e6).toFixed(1).replace('.0', '') + ' M' : n >= 1e3 ? (n / 1e3).toFixed(1).replace('.0', '') + ' mil' : String(n);
 const fechaTxt = (f) => /^\d{8}$/.test(f || '') ? `${f.slice(6)}/${f.slice(4, 6)}/${f.slice(0, 4)}` : '';
 
+// Fecha corta de descarga: «hoy», «ayer» o «8 nov» (con año si es de otro año)
+function fechaCorta(iso) {
+  const d = new Date(iso); if (isNaN(d)) return '';
+  const hoy = new Date(), dia = (z) => new Date(z.getFullYear(), z.getMonth(), z.getDate()).getTime(), dif = Math.round((dia(hoy) - dia(d)) / 86400000);
+  if (dif === 0) return 'hoy'; if (dif === 1) return 'ayer';
+  return d.toLocaleDateString('es', { day: 'numeric', month: 'short', ...(d.getFullYear() !== hoy.getFullYear() ? { year: 'numeric' } : {}) }).replace('.', '');
+}
+
 function pestana(nombre) {
   $('#vistaEnviar').hidden = nombre !== 'enviar';
   $('#vistaBib').hidden = nombre !== 'biblioteca';
@@ -92,7 +100,7 @@ function pintar() {
   $('#rejilla').innerHTML = l.map((x) => `<li><button class="tarjeta" data-id="${esc(x.id)}">
     <span class="foto">${x.portada ? `<img src="${esc(x.portada)}" alt="" loading="lazy">` : ''}<em class="r-${esc(x.red)}">${esc(REDES[x.red] || x.red)}</em>${x.favorito ? '<b aria-label="Favorito">★</b>' : ''}</span>
     <span class="cuenta">@${esc(x.cuenta || '')}</span><span class="gancho">${esc(x.hook || x.copy || '')}</span>
-    ${x.vistas ? `<span class="vistas">${fmt(x.vistas)} vistas</span>` : ''}</button></li>`).join('');
+    ${x.vistas ? `<span class="vistas">${fmt(x.vistas)} vistas</span>` : ''}${x.descargado ? `<span class="bajado">Bajado ${fechaCorta(x.descargado)}</span>` : ''}</button></li>`).join('');
 }
 
 function ficha(id) {
