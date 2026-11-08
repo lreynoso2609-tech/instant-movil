@@ -89,3 +89,7 @@ label.rapido input{width:22px;height:22px;min-height:0;padding:0;accent-color:va
 .filtros #fOrden{grid-row:2}
 .ver-bib{justify-self:start;min-height:40px;margin-top:6px;padding:0 14px;border:1px solid var(--line-hi);border-radius:10px;background:var(--surface);color:var(--text);font:500 14px var(--body);transition:transform .12s,border-color .15s}
 .ver-bib:active{transform:scale(.97);border-color:var(--accent)}
+.item .acc .reint,.item .acc .ver-bib{margin:0}
+#rejilla li{position:relative}
+#rejilla li.halo::after{content:"";position:absolute;inset:-5px;border-radius:16px;border:2px solid var(--accent);box-shadow:0 0 26px 4px rgba(57,255,106,.6),inset 0 0 18px rgba(57,255,106,.25);pointer-events:none;animation:halo 1.1s ease-in-out 5 both}
+@keyframes halo{0%,100%{opacity:.4}50%{opacity:1}}
