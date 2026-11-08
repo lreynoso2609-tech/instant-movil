@@ -169,25 +169,28 @@ async function avisarCelular(tmp, r, url) {
 }
 
 async function procesar(fila) {
-  let ultimo = 0, mayor = 5;
+  let ultimo = 0, mayor = 5, miniatura = '';
+  // la miniatura viaja al final del mensaje entre dobles corchetes ([[img:...]]); la página del celular la separa del texto
+  const marcaImg = () => (miniatura ? ' [[img:' + miniatura + ']]' : '');
   const avance = (pct, texto) => { // se guarda en la lista cada ~4 s para que el celular lo muestre
     if (Date.now() - ultimo < 4000) return;
     ultimo = Date.now();
-    return marcar(fila.id, 'bajando', `${texto} ${Math.round(pct)} %`).catch(() => {});
+    return marcar(fila.id, 'bajando', `${texto} ${Math.round(pct)} %${marcaImg()}`).catch(() => {});
   };
   const url = await resolver(String(fila.enlace).trim());
   const r = red(url);
   if (!r) return ['error', 'Enlace no reconocido. Instant acepta TikTok, Instagram y Facebook.'];
 
-  const q = yt(['--no-playlist', '--skip-download', '--print', '%(id)s', url]);
+  const q = yt(['--no-playlist', '--skip-download', '--print', '%(id)s', '--print', '%(thumbnail)s', url]);
   const id = (q.stdout || '').trim().split('\n')[0];
+  { const t = ((q.stdout || '').trim().split(String.fromCharCode(10))[1] || '').trim(); if (t.startsWith('https://') && t.length < 900) miniatura = t; }
   if (q.status !== 0 || !id) return ['error', explicar(r, (q.stderr || '') + (q.stdout || ''))];
 
   // ¿Ya se bajó antes? (la carpeta de la publicación termina en _<id>)
   const previa = await buscarCarpeta('_' + id, null, true);
   // «ya lo tenías» solo si de verdad quedó el video: si una subida anterior se cortó, se completa
   const completa = previa && ((await (await drive('https://www.googleapis.com/drive/v3/files?fields=files(id)&pageSize=1&q=' + encodeURIComponent(`'${previa.id}' in parents and name contains '.mp4' and trashed=false`))).json()).files.length > 0);
-  if (completa) return ['duplicado', 'Ya lo tenías: este video ya se había enviado antes desde el celular. [[' + r + ':' + id + ']]'];
+  if (completa) return ['duplicado', 'Ya lo tenías: este video ya se había enviado antes desde el celular. [[' + r + ':' + id + ']]' + marcaImg()];
 
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'instant-'));
   try {
@@ -210,7 +213,7 @@ async function procesar(fila) {
     ultimo = 0; await avance(85, 'Subiendo a tu Drive…');
     await subirArbol(tmp, await carpeta('Instant nube', null));
     await avisarCelular(tmp, r, url); // aparece ya en la Biblioteca del celular, aunque la PC esté apagada
-    return ['listo', 'Guardado en "Instant nube". La PC lo traerá a tu biblioteca.'];
+    return ['listo', 'Guardado en "Instant nube". La PC lo traerá a tu biblioteca.' + marcaImg()];
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 }
 
