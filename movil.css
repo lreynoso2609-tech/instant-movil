@@ -92,3 +92,8 @@ input:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px soli
 .item.con-mini{grid-template-columns:44px minmax(0,1fr) auto}
 .item.con-mini .en{grid-column:2}
 .item.con-mini .pill{grid-column:3}
+.envios-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:6px}
+.envios-top h2{margin:0}
+.limpiar{min-height:40px;padding:0 14px;border:1px solid var(--line-hi);border-radius:10px;background:var(--surface);color:var(--soft);font:500 14px var(--body);transition:transform .12s,border-color .15s}
+.limpiar:active{transform:scale(.97);border-color:var(--accent)}
+.limpiar[hidden]{display:none}
