@@ -89,6 +89,7 @@ function itemHtml(x) {
   const pct = x.estado === 'bajando' ? +((/(\d+) %/.exec(x.mensaje || '') || [])[1] || 0) : null;
   const sinPrefijo = (m) => { const t = String(m || '').replace(/^Ya lo tenías:\s*/i, ''); return t.charAt(0).toUpperCase() + t.slice(1); };
   const texto = x.estado === 'pendiente' ? `${hace(x.creado)} · la nube lo recoge en segundos`
+    : x.estado === 'listo' ? 'Guardado en tu Drive. Ya está en tu Biblioteca.'
     : x.estado === 'duplicado' ? sinPrefijo(x.mensaje) : (x.mensaje || (x.estado === 'error' ? 'No se pudo.' : ''));
   const barra = x.estado === 'pendiente' || x.estado === 'bajando'
     ? `<div class="pg ${x.estado === 'pendiente' ? 'busca' : ''}" data-id="${x.id}" data-t="${pct ?? 0}" data-auto="${x.estado === 'pendiente' ? new Date(x.creado).getTime() : ''}"><div class="barra"><i></i>${x.estado === 'pendiente' ? '' : '<s class="cometa"></s>'}</div><b class="pg-n">0 %</b></div>` : '';
@@ -121,6 +122,8 @@ async function cargarLista() {
   listosAntes = listos;
   $('#vacio').hidden = r.datos.length > 0;
   ultimaCola = r.datos;
+  const terminados = r.datos.filter((x) => x.estado === 'listo' || x.estado === 'duplicado' || x.estado === 'error').length;
+  $('#limpiar').hidden = !terminados; $('#limpiar').textContent = 'Limpiar (' + terminados + ')';
   repintarCola(); // solo se redibuja si algo cambió
   // la biblioteca se carga una vez en segundo plano: de ahí salen las miniaturas de los envíos que no la guardaron
   if (!precargaBib && typeof cargarBiblioteca === 'function') { precargaBib = true; cargarBiblioteca(); }
@@ -225,6 +228,19 @@ $('#lista').addEventListener('click', async (e) => {
   for (let i = 0; i < 40 && !(typeof todas !== 'undefined' && todas.length); i++) await new Promise((ok) => setTimeout(ok, 250));
   if (id && ubicarEnBiblioteca(id)) return;
   else aviso(id ? 'Ese video todavía no aparece en tu biblioteca del celular. Prueba en un momento.' : 'Mira en tu Biblioteca: ahí está guardado.');
+});
+// «Limpiar»: borra del historial los envíos ya terminados (guardados, repetidos y con error). Los videos NO se borran de tu biblioteca ni de tu Drive.
+$('#limpiar').addEventListener('click', async (e) => {
+  const b = e.currentTarget; if (b.disabled) return;
+  if (!confirm('¿Limpiar el historial de envíos terminados?\n\nLos videos NO se borran: siguen en tu Biblioteca y en tu Drive. Solo se vacían estos bloques. Lo que está descargándose no se toca.')) return;
+  b.disabled = true;
+  try {
+    if (!(await renovar())) return;
+    const r = await llamar('/rest/v1/cola?estado=in.(listo,duplicado,error)', { metodo: 'DELETE', token: sesion.token });
+    if (!r.ok) throw 0;
+    ultimoHtml = ''; await cargarLista(); aviso('Listo: historial limpio.');
+  } catch { aviso('No se pudo limpiar. Revisa tu internet e inténtalo de nuevo.', true); }
+  finally { b.disabled = false; }
 });
 $('#salir').addEventListener('click', () => { if (confirm('¿Cerrar la sesión? Tendrás que volver a entrar.')) salir(); });
 
