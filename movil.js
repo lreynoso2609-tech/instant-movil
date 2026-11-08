@@ -101,10 +101,17 @@ function itemHtml(x) {
 }
 
 let ultimaCola = null, precargaBib = false;
+const TERMINADOS = ['listo', 'duplicado', 'error'];
+const visibleCola = () => { const fuera = new Set(leer('limpiados') || []); return (ultimaCola || []).filter((x) => !(TERMINADOS.includes(x.estado) && fuera.has(x.id))); }; // solo se ocultan los ya terminados que limpiaste
+function actualizarLimpiar() {
+  const n = visibleCola().filter((x) => TERMINADOS.includes(x.estado)).length;
+  $('#limpiar').hidden = !n; $('#limpiar').textContent = 'Limpiar (' + n + ')';
+  $('#vacio').hidden = visibleCola().length > 0;
+}
 // Vuelve a dibujar «Mis envíos» con los datos que ya hay (por ejemplo, cuando llegan las portadas de la biblioteca).
 function repintarCola() {
   if (!ultimaCola) return;
-  const html = ultimaCola.map(itemHtml).join('');
+  const html = visibleCola().map(itemHtml).join('');
   if (html !== ultimoHtml) { $('#lista').innerHTML = html; ultimoHtml = html; }
 }
 async function cargarLista() {
@@ -122,9 +129,7 @@ async function cargarLista() {
   listosAntes = listos;
   $('#vacio').hidden = r.datos.length > 0;
   ultimaCola = r.datos;
-  const terminados = r.datos.filter((x) => x.estado === 'listo' || x.estado === 'duplicado' || x.estado === 'error').length;
-  $('#limpiar').hidden = !terminados; $('#limpiar').textContent = 'Limpiar (' + terminados + ')';
-  repintarCola(); // solo se redibuja si algo cambió
+  repintarCola(); actualizarLimpiar(); // solo se redibuja si algo cambió
   // la biblioteca se carga una vez en segundo plano: de ahí salen las miniaturas de los envíos que no la guardaron
   if (!precargaBib && typeof cargarBiblioteca === 'function') { precargaBib = true; cargarBiblioteca(); }
 }
@@ -229,20 +234,37 @@ $('#lista').addEventListener('click', async (e) => {
   if (id && ubicarEnBiblioteca(id)) return;
   else aviso(id ? 'Ese video todavía no aparece en tu biblioteca del celular. Prueba en un momento.' : 'Mira en tu Biblioteca: ahí está guardado.');
 });
-// «Limpiar»: borra del historial los envíos ya terminados (guardados, repetidos y con error). Los videos NO se borran de tu biblioteca ni de tu Drive.
+// Ventana propia de confirmación (en vez de la del navegador, que muestra el nombre de la página y confunde).
+function preguntar(titulo, lineas, botonSi) {
+  return new Promise((ok) => {
+    const d = document.createElement('dialog'); d.className = 'pregunta';
+    d.innerHTML = '<h3>' + esc(titulo) + '</h3>' + lineas.map((t) => '<p>' + esc(t) + '</p>').join('') +
+      '<div class="pregunta-btns"><button type="button" class="no">Cancelar</button><button type="button" class="si">' + esc(botonSi) + '</button></div>';
+    const fin = (v) => { d.close(); d.remove(); ok(v); };
+    d.querySelector('.no').addEventListener('click', () => fin(false));
+    d.querySelector('.si').addEventListener('click', () => fin(true));
+    d.addEventListener('cancel', (e) => { e.preventDefault(); fin(false); });
+    document.body.appendChild(d); d.showModal(); d.querySelector('.no').focus();
+  });
+}
+
+// «Limpiar»: vacía el historial de envíos terminados (guardados, repetidos y con error). Los videos NO se borran de tu biblioteca ni de tu Drive.
+// Se oculta en este celular de inmediato y, además, se intenta borrar de la base de datos (si esta no lo permite, igual queda limpio aquí).
 $('#limpiar').addEventListener('click', async (e) => {
   const b = e.currentTarget; if (b.disabled) return;
-  if (!confirm('¿Limpiar el historial de envíos terminados?\n\nLos videos NO se borran: siguen en tu Biblioteca y en tu Drive. Solo se vacían estos bloques. Lo que está descargándose no se toca.')) return;
+  const n = (ultimaCola || []).filter((x) => TERMINADOS.includes(x.estado)).length;
+  const si = await preguntar('¿Limpiar el historial?', ['Solo se vacían estos ' + n + ' bloques de «Mis envíos».', 'Tus videos NO se borran: siguen en tu Biblioteca y en tu Drive.', 'Lo que se está descargando no se toca.'], 'Limpiar historial');
+  if (!si) return;
   b.disabled = true;
   try {
-    if (!(await renovar())) return;
-    const r = await llamar('/rest/v1/cola?estado=in.(listo,duplicado,error)', { metodo: 'DELETE', token: sesion.token });
-    if (!r.ok) throw 0;
-    ultimoHtml = ''; await cargarLista(); aviso('Listo: historial limpio.');
-  } catch { aviso('No se pudo limpiar. Revisa tu internet e inténtalo de nuevo.', true); }
-  finally { b.disabled = false; }
+    const ids = (ultimaCola || []).filter((x) => TERMINADOS.includes(x.estado)).map((x) => x.id);
+    guardar('limpiados', [...new Set([...(leer('limpiados') || []), ...ids])].slice(-500)); // en este celular se ocultan ya mismo
+    if (await renovar()) llamar('/rest/v1/cola?estado=in.(listo,duplicado,error)', { metodo: 'DELETE', token: sesion.token }).catch(() => {}); // y se intenta borrar de verdad
+    ultimoHtml = ''; repintarCola(); actualizarLimpiar();
+    aviso('Listo: historial limpio. Tus videos siguen en la Biblioteca.');
+  } finally { b.disabled = false; }
 });
-$('#salir').addEventListener('click', () => { if (confirm('¿Cerrar la sesión? Tendrás que volver a entrar.')) salir(); });
+$('#salir').addEventListener('click', async () => { if (await preguntar('¿Cerrar la sesión?', ['Tendrás que volver a entrar con tu correo y contraseña.'], 'Cerrar sesión')) salir(); });
 
 // Si llegas desde "Compartir → Instant" (Android con la app instalada), el enlace ya viene puesto.
 const q = new URLSearchParams(location.search);
