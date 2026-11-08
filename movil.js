@@ -46,7 +46,7 @@ async function renovar() {
   sesion = { token: r.datos.access_token, refresco: r.datos.refresh_token, vence: Date.now() + (r.datos.expires_in - 60) * 1000 };
   guardar('sesion', sesion); return true;
 }
-function salir(motivo) { listosAntes = null; sesion = null; guardar('sesion', null); clearTimeout(timer); ultimoHtml = ''; mostrar(); aviso(motivo || '', true); }
+function salir(motivo) { listosAntes = null; sesion = null; guardar('sesion', null); clearTimeout(timer); ultimoHtml = null; mostrar(); aviso(motivo || '', true); }
 // Franja "sin conexión": se muestra cuando falla internet y se quita sola al volver.
 function hayRed(si) { $('#sinRed').hidden = si; }
 window.addEventListener('offline', () => hayRed(false));
@@ -95,8 +95,9 @@ function itemHtml(x) {
     ? `<div class="pg ${x.estado === 'pendiente' ? 'busca' : ''}" data-id="${x.id}" data-t="${pct ?? 0}" data-auto="${x.estado === 'pendiente' ? new Date(x.creado).getTime() : ''}"><div class="barra"><i></i>${x.estado === 'pendiente' ? '' : '<s class="cometa"></s>'}</div><b class="pg-n">0 %</b></div>` : '';
   const acciones = x.estado === 'error' ? `<div class="acc"><button type="button" class="reint" data-enlace="${esc(x.enlace)}">Reintentar</button><small>Si falla otra vez, bájalo desde la PC.</small></div>`
     : (x.estado === 'duplicado' || x.estado === 'listo') ? `<div class="acc"><button type="button" class="ver-bib" data-id="${esc(idRep)}">Ver en la biblioteca</button></div>` : '';
-  const mini = mk.img ? `<img class="mini" src="${esc(mk.img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.closest('.item').classList.remove('con-mini');this.remove()">` : '';
-  return `<li class="item e-${esc(x.estado)}${mk.img ? ' con-mini' : ''}">${mini}<span class="en"><b>${esc(nombreEnlace(x.enlace))}</b><small>${esc(x.enlace)}</small></span>
+  const mini = mk.img ? `<img class="mini" src="${esc(mk.img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.closest('.item').classList.remove('con-mini');this.remove()">`
+    : (x.estado === 'pendiente' || x.estado === 'bajando') ? '<span class="mini ph" aria-hidden="true"></span>' : ''; // mientras la nube busca el video: cuadro reservado que respira
+  return `<li class="item e-${esc(x.estado)}${(mk.img || x.estado === 'pendiente' || x.estado === 'bajando') ? ' con-mini' : ''}">${mini}<span class="en"><b>${esc(nombreEnlace(x.enlace))}</b><small>${esc(x.enlace)}</small></span>
     <span class="estado"><span class="pill ${esc(x.estado)}">${TEXTO[x.estado] || esc(x.estado)}</span><span class="txt">${esc(texto)}</span></span>${barra}${acciones}</li>`;
 }
 
@@ -260,7 +261,7 @@ $('#limpiar').addEventListener('click', async (e) => {
     const ids = (ultimaCola || []).filter((x) => TERMINADOS.includes(x.estado)).map((x) => x.id);
     guardar('limpiados', [...new Set([...(leer('limpiados') || []), ...ids])].slice(-500)); // en este celular se ocultan ya mismo
     if (await renovar()) llamar('/rest/v1/cola?estado=in.(listo,duplicado,error)', { metodo: 'DELETE', token: sesion.token }).catch(() => {}); // y se intenta borrar de verdad
-    ultimoHtml = ''; repintarCola(); actualizarLimpiar();
+    ultimoHtml = null; repintarCola(); actualizarLimpiar(); // null (no ''): así se redibuja aunque la lista quede vacía
     aviso('Listo: historial limpio. Tus videos siguen en la Biblioteca.');
   } finally { b.disabled = false; }
 });
