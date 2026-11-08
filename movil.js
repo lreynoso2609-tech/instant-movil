@@ -74,11 +74,16 @@ function nombreEnlace(u) {
   const c = /tiktok\.com\/(@[^/?]+)/i.exec(u);
   return c ? `${red} · ${c[1]}` : red;
 }
-// La nube deja al final del mensaje de un repetido el id del video entre dobles corchetes; aquí se separa del texto visible.
-const MARCA_ID = /\s*\[\[(.+?)\]\]\s*$/;
+const MARCAS = /\s*\[\[(.+?)\]\]/g;
+function sacarMarcas(m) { // [[img:URL]] = miniatura del video; [[red:id]] = cuál es en tu biblioteca. Se quitan del texto visible.
+  let img = '', id = '';
+  const limpio = String(m || '').replace(MARCAS, (_, v) => { if (v.startsWith('img:')) img = v.slice(4); else id = v; return ''; }).trim();
+  return { limpio, img, id };
+}
 function itemHtml(x) {
-  const idRep = x.estado === 'duplicado' ? ((MARCA_ID.exec(x.mensaje || '') || [])[1] || idDe(x.enlace) || '') : '';
-  if (x.estado === 'duplicado') x = { ...x, mensaje: (x.mensaje || '').replace(MARCA_ID, '') };
+  const mk = sacarMarcas(x.mensaje);
+  const idRep = x.estado === 'duplicado' ? (mk.id || idDe(x.enlace) || '') : '';
+  x = { ...x, mensaje: mk.limpio };
   const pct = x.estado === 'bajando' ? +((/(\d+) %/.exec(x.mensaje || '') || [])[1] || 0) : null;
   const sinPrefijo = (m) => { const t = String(m || '').replace(/^Ya lo tenías:\s*/i, ''); return t.charAt(0).toUpperCase() + t.slice(1); };
   const texto = x.estado === 'pendiente' ? `${hace(x.creado)} · la nube lo recoge en segundos`
@@ -87,7 +92,8 @@ function itemHtml(x) {
     ? `<div class="pg ${x.estado === 'pendiente' ? 'busca' : ''}" data-id="${x.id}" data-t="${pct ?? 0}" data-auto="${x.estado === 'pendiente' ? new Date(x.creado).getTime() : ''}"><div class="barra"><i></i>${x.estado === 'pendiente' ? '' : '<s class="cometa"></s>'}</div><b class="pg-n">0 %</b></div>` : '';
   const acciones = x.estado === 'error' ? `<div class="acc"><button type="button" class="reint" data-enlace="${esc(x.enlace)}">Reintentar</button><small>Si falla otra vez, bájalo desde la PC.</small></div>`
     : x.estado === 'duplicado' ? `<div class="acc"><button type="button" class="ver-bib" data-id="${esc(idRep)}">Ver en la biblioteca</button></div>` : '';
-  return `<li class="item e-${esc(x.estado)}"><span class="en"><b>${esc(nombreEnlace(x.enlace))}</b><small>${esc(x.enlace)}</small></span>
+  const mini = mk.img ? `<img class="mini" src="${esc(mk.img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.closest('.item').classList.remove('con-mini');this.remove()">` : '';
+  return `<li class="item e-${esc(x.estado)}${mk.img ? ' con-mini' : ''}">${mini}<span class="en"><b>${esc(nombreEnlace(x.enlace))}</b><small>${esc(x.enlace)}</small></span>
     <span class="estado"><span class="pill ${esc(x.estado)}">${TEXTO[x.estado] || esc(x.estado)}</span><span class="txt">${esc(texto)}</span></span>${barra}${acciones}</li>`;
 }
 
