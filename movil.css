@@ -97,3 +97,13 @@ input:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px soli
 .limpiar{min-height:40px;padding:0 14px;border:1px solid var(--line-hi);border-radius:10px;background:var(--surface);color:var(--soft);font:500 14px var(--body);transition:transform .12s,border-color .15s}
 .limpiar:active{transform:scale(.97);border-color:var(--accent)}
 .limpiar[hidden]{display:none}
+
+/* ventana de confirmación propia */
+dialog.pregunta{margin:auto;width:min(92vw,380px);padding:20px;border:1px solid var(--line-hi);border-radius:16px;background:var(--surface);color:var(--text);box-shadow:0 20px 60px -10px #000}
+dialog.pregunta::backdrop{background:rgba(0,0,0,.65)}
+dialog.pregunta h3{margin:0 0 10px;font:600 18px var(--display)}
+dialog.pregunta p{margin:0 0 8px;font-size:15px;line-height:1.4;color:var(--soft);text-wrap:pretty}
+.pregunta-btns{display:flex;gap:10px;margin-top:16px}
+.pregunta-btns button{flex:1;min-height:46px;border-radius:12px;border:1px solid var(--line-hi);background:var(--raise);color:var(--text);font:600 15px var(--body);transition:transform .12s}
+.pregunta-btns button:active{transform:scale(.97)}
+.pregunta-btns .si{background:var(--accent);border-color:var(--accent);color:#04140a}
