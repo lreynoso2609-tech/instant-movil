@@ -184,6 +184,8 @@ async function procesar(fila) {
   const q = yt(['--no-playlist', '--skip-download', '--print', '%(id)s', '--print', '%(thumbnail)s', url]);
   const id = (q.stdout || '').trim().split('\n')[0];
   { const t = ((q.stdout || '').trim().split(String.fromCharCode(10))[1] || '').trim(); if (t.startsWith('https://') && t.length < 900) miniatura = t; }
+  // la miniatura sale ya en la fase «buscando», antes de empezar a bajar
+  if (miniatura) await marcar(fila.id, 'bajando', 'Buscando el video…' + marcaImg()).catch(() => {});
   if (q.status !== 0 || !id) return ['error', explicar(r, (q.stderr || '') + (q.stdout || ''))];
 
   // ¿Ya se bajó antes? (la carpeta de la publicación termina en _<id>)
@@ -213,7 +215,7 @@ async function procesar(fila) {
     ultimo = 0; await avance(85, 'Subiendo a tu Drive…');
     await subirArbol(tmp, await carpeta('Instant nube', null));
     await avisarCelular(tmp, r, url); // aparece ya en la Biblioteca del celular, aunque la PC esté apagada
-    return ['listo', 'Guardado en "Instant nube". La PC lo traerá a tu biblioteca.' + marcaImg()];
+    return ['listo', 'Guardado en "Instant nube". La PC lo traerá a tu biblioteca. [[' + r + ':' + id + ']]' + marcaImg()];
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 }
 
