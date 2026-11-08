@@ -48,10 +48,19 @@ async function tokenGoogle() {
   if (!r.ok) throw new Error('Google no aceptó el permiso guardado (' + r.status + '). Hay que repetir la autorización.');
   token = (await r.json()).access_token;
 }
+// Google a veces responde 500/502/503/429 por un instante: se reintenta hasta 5 veces con espera creciente antes de rendirse.
 async function drive(url, opciones = {}) {
-  const r = await fetch(url, { ...opciones, headers: { Authorization: 'Bearer ' + token, ...(opciones.headers || {}) } });
-  if (!r.ok) throw new Error('Drive respondió ' + r.status);
-  return r;
+  let ultimoError;
+  for (let intento = 0; intento < 5; intento++) {
+    if (intento) await new Promise((ok) => setTimeout(ok, 1500 * intento * intento));
+    try {
+      const r = await fetch(url, { ...opciones, headers: { Authorization: 'Bearer ' + token, ...(opciones.headers || {}) } });
+      if (r.ok) return r;
+      ultimoError = new Error('Drive respondió ' + r.status);
+      if (r.status < 500 && r.status !== 429) throw ultimoError;
+    } catch (e) { if (/^Drive respondió [1-4]/.test(e.message) && !/ 429/.test(e.message)) throw e; ultimoError = e; }
+  }
+  throw ultimoError;
 }
 const esc = (s) => String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 async function buscarCarpeta(nombre, padre, contiene = false) {
@@ -70,6 +79,9 @@ async function carpeta(nombre, padre) {
   return (await r.json()).id;
 }
 async function subir(archivo, padre) {
+  // si ese archivo ya está en la carpeta (un intento anterior se cortó a la mitad), no se repite
+  const yaEsta = await drive('https://www.googleapis.com/drive/v3/files?fields=files(id)&pageSize=1&q=' + encodeURIComponent(`name='${esc(path.basename(archivo))}' and '${padre}' in parents and trashed=false`));
+  if ((await yaEsta.json()).files.length) return;
   const datos = fs.readFileSync(archivo);
   const ini = await drive('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&fields=id', {
     method: 'POST', headers: { 'Content-Type': 'application/json; charset=UTF-8' },
@@ -94,7 +106,8 @@ async function resolver(u) { // enlaces cortos de TikTok (vt/vm) -> enlace largo
 }
 function explicar(r, texto) {
   const t = texto.toLowerCase();
-  if (/login|private|privad|sign in|cookies/.test(t)) return 'Este contenido no es público (pide iniciar sesión). Instant solo guarda contenido público.';
+  if (/cannot parse data|unable to extract|unsupported url: .*share/.test(t)) return 'Facebook cambió algo en su página y la herramienta no pudo leer este video (no significa que sea privado). Prueba desde la PC o más tarde.';
+  if (/login required|log in|private|privad|sign in|registered users|members only/.test(t)) return 'Este contenido no es público (pide iniciar sesión). Instant solo guarda contenido público.';
   if (/unsupported url|no video|no media/.test(t)) return 'El enlace no tiene un video descargable. Los carruseles de fotos todavía no se bajan desde el celular.';
   if (/404|not found|unavailable|removed/.test(t)) return 'La publicación ya no existe o fue borrada.';
   if (/429|403|blocked|rate.?limit|too many/.test(t)) return r + ' bloqueó a la nube por un momento. Prueba más tarde o bájalo desde la PC.';
@@ -171,7 +184,10 @@ async function procesar(fila) {
   if (q.status !== 0 || !id) return ['error', explicar(r, (q.stderr || '') + (q.stdout || ''))];
 
   // ¿Ya se bajó antes? (la carpeta de la publicación termina en _<id>)
-  if (await buscarCarpeta('_' + id, null, true)) return ['duplicado', 'Ya lo tenías: este video ya se había enviado antes desde el celular.'];
+  const previa = await buscarCarpeta('_' + id, null, true);
+  // «ya lo tenías» solo si de verdad quedó el video: si una subida anterior se cortó, se completa
+  const completa = previa && ((await (await drive('https://www.googleapis.com/drive/v3/files?fields=files(id)&pageSize=1&q=' + encodeURIComponent(`'${previa.id}' in parents and name contains '.mp4' and trashed=false`))).json()).files.length > 0);
+  if (completa) return ['duplicado', 'Ya lo tenías: este video ya se había enviado antes desde el celular.'];
 
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'instant-'));
   try {
