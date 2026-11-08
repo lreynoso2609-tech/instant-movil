@@ -158,3 +158,19 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('#fic
 
 // Al abrir o recargar la página, vuelve a la pestaña que estabas viendo.
 if (sesion && !vienesDeCompartir && leer("pestana") === "biblioteca") pestana("biblioteca");
+
+// «Ver en la biblioteca» (desde Mis envíos): te lleva a la tarjeta de ese video y le pone un marco luminoso unos segundos para ubicarla rápido.
+function ubicarEnBiblioteca(id) {
+  if (!todas.some((y) => y.id === id)) return false;
+  if (!filtradas().some((y) => y.id === id)) { // si un filtro o la búsqueda la esconde, se quitan para que aparezca
+    $('#buscar').value = ''; $('#fEstado').value = ''; $('#fRed').value = ''; $('#fColeccion').value = ''; $('#fFav').setAttribute('aria-pressed', 'false');
+    pintar();
+  }
+  const t = [...document.querySelectorAll('#rejilla .tarjeta')].find((b) => b.dataset.id === id); if (!t) return false;
+  document.querySelectorAll('#rejilla li.halo').forEach((b) => b.classList.remove('halo'));
+  const li = t.parentElement;
+  t.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  li.classList.add('halo');
+  setTimeout(() => li.classList.remove('halo'), 6000);
+  return true;
+}
