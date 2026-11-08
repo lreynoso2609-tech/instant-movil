@@ -82,7 +82,9 @@ function sacarMarcas(m) { // [[img:URL]] = miniatura del video; [[red:id]] = cu�
 }
 function itemHtml(x) {
   const mk = sacarMarcas(x.mensaje);
-  const idRep = x.estado === 'duplicado' ? (mk.id || idDe(x.enlace) || '') : '';
+  const idRep = (x.estado === 'duplicado' || x.estado === 'listo') ? (mk.id || idDe(x.enlace) || '') : '';
+  // sin miniatura propia (envíos viejos): se usa la portada de tu biblioteca si ya se cargó
+  if (!mk.img && idRep && typeof portadas !== 'undefined' && portadas.get(idRep)) mk.img = portadas.get(idRep);
   x = { ...x, mensaje: mk.limpio };
   const pct = x.estado === 'bajando' ? +((/(\d+) %/.exec(x.mensaje || '') || [])[1] || 0) : null;
   const sinPrefijo = (m) => { const t = String(m || '').replace(/^Ya lo tenías:\s*/i, ''); return t.charAt(0).toUpperCase() + t.slice(1); };
@@ -91,12 +93,19 @@ function itemHtml(x) {
   const barra = x.estado === 'pendiente' || x.estado === 'bajando'
     ? `<div class="pg ${x.estado === 'pendiente' ? 'busca' : ''}" data-id="${x.id}" data-t="${pct ?? 0}" data-auto="${x.estado === 'pendiente' ? new Date(x.creado).getTime() : ''}"><div class="barra"><i></i>${x.estado === 'pendiente' ? '' : '<s class="cometa"></s>'}</div><b class="pg-n">0 %</b></div>` : '';
   const acciones = x.estado === 'error' ? `<div class="acc"><button type="button" class="reint" data-enlace="${esc(x.enlace)}">Reintentar</button><small>Si falla otra vez, bájalo desde la PC.</small></div>`
-    : x.estado === 'duplicado' ? `<div class="acc"><button type="button" class="ver-bib" data-id="${esc(idRep)}">Ver en la biblioteca</button></div>` : '';
+    : (x.estado === 'duplicado' || x.estado === 'listo') ? `<div class="acc"><button type="button" class="ver-bib" data-id="${esc(idRep)}">Ver en la biblioteca</button></div>` : '';
   const mini = mk.img ? `<img class="mini" src="${esc(mk.img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.closest('.item').classList.remove('con-mini');this.remove()">` : '';
   return `<li class="item e-${esc(x.estado)}${mk.img ? ' con-mini' : ''}">${mini}<span class="en"><b>${esc(nombreEnlace(x.enlace))}</b><small>${esc(x.enlace)}</small></span>
     <span class="estado"><span class="pill ${esc(x.estado)}">${TEXTO[x.estado] || esc(x.estado)}</span><span class="txt">${esc(texto)}</span></span>${barra}${acciones}</li>`;
 }
 
+let ultimaCola = null, precargaBib = false;
+// Vuelve a dibujar «Mis envíos» con los datos que ya hay (por ejemplo, cuando llegan las portadas de la biblioteca).
+function repintarCola() {
+  if (!ultimaCola) return;
+  const html = ultimaCola.map(itemHtml).join('');
+  if (html !== ultimoHtml) { $('#lista').innerHTML = html; ultimoHtml = html; }
+}
 async function cargarLista() {
   if (!(await renovar())) return;
   const r = await llamar('/rest/v1/cola?select=id,enlace,estado,mensaje,creado&order=id.desc&limit=30', { token: sesion.token }).catch(() => null);
@@ -111,8 +120,10 @@ async function cargarLista() {
   if (listosAntes) { const nuevos = [...listos].filter((id) => !listosAntes.has(id)).length; if (nuevos) aviso(nuevos > 1 ? `Ya se guardaron ${nuevos} videos en tu biblioteca ✓` : 'Ya se guardó un video en tu biblioteca ✓'); }
   listosAntes = listos;
   $('#vacio').hidden = r.datos.length > 0;
-  const html = r.datos.map(itemHtml).join('');
-  if (html !== ultimoHtml) { $('#lista').innerHTML = html; ultimoHtml = html; } // solo se redibuja si algo cambió
+  ultimaCola = r.datos;
+  repintarCola(); // solo se redibuja si algo cambió
+  // la biblioteca se carga una vez en segundo plano: de ahí salen las miniaturas de los envíos que no la guardaron
+  if (!precargaBib && typeof cargarBiblioteca === 'function') { precargaBib = true; cargarBiblioteca(); }
 }
 
 function enlacesDe(texto) {
