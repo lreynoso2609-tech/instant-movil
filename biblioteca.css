@@ -87,3 +87,5 @@ label.rapido input{width:22px;height:22px;min-height:0;padding:0;accent-color:va
 .reint{justify-self:start;min-height:44px;margin-top:6px;padding:0 18px;border:1px solid var(--accent);border-radius:10px;background:rgba(57,255,106,.1);color:var(--accent);font:600 15px var(--body)}
 .plegable[open]{grid-column:1/-1;grid-row:3}
 .filtros #fOrden{grid-row:2}
+.ver-bib{justify-self:start;min-height:40px;margin-top:6px;padding:0 14px;border:1px solid var(--line-hi);border-radius:10px;background:var(--surface);color:var(--text);font:500 14px var(--body);transition:transform .12s,border-color .15s}
+.ver-bib:active{transform:scale(.97);border-color:var(--accent)}
