@@ -62,6 +62,7 @@ async function traerPortadas() {
       if (foto && !foto.querySelector('img')) foto.insertAdjacentHTML('afterbegin', '<img src="' + esc(p.portada) + '" alt="" loading="lazy">');
     }
   }
+  if (typeof repintarCola === 'function') repintarCola(); // los envíos sin miniatura propia usan estas portadas
 }
 
 function llenarFiltros() {
