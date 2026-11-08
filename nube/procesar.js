@@ -215,7 +215,7 @@ async function procesar(fila) {
     ultimo = 0; await avance(85, 'Subiendo a tu Drive…');
     await subirArbol(tmp, await carpeta('Instant nube', null));
     await avisarCelular(tmp, r, url); // aparece ya en la Biblioteca del celular, aunque la PC esté apagada
-    return ['listo', 'Guardado en "Instant nube". La PC lo traerá a tu biblioteca. [[' + r + ':' + id + ']]' + marcaImg()];
+    return ['listo', 'Guardado en tu Drive. Ya está en tu Biblioteca. [[' + r + ':' + id + ']]' + marcaImg()];
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 }
 
