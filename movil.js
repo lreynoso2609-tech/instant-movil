@@ -74,14 +74,18 @@ function nombreEnlace(u) {
   const c = /tiktok\.com\/(@[^/?]+)/i.exec(u);
   return c ? `${red} · ${c[1]}` : red;
 }
+// La nube deja al final del mensaje de un repetido el id del video entre dobles corchetes; aquí se separa del texto visible.
+const MARCA_ID = /\s*\[\[(.+?)\]\]\s*$/;
 function itemHtml(x) {
+  const idRep = x.estado === 'duplicado' ? ((MARCA_ID.exec(x.mensaje || '') || [])[1] || idDe(x.enlace) || '') : '';
+  if (x.estado === 'duplicado') x = { ...x, mensaje: (x.mensaje || '').replace(MARCA_ID, '') };
   const pct = x.estado === 'bajando' ? +((/(\d+) %/.exec(x.mensaje || '') || [])[1] || 0) : null;
   const texto = x.estado === 'pendiente' ? `${hace(x.creado)} · la nube lo recoge en segundos`
     : x.estado === 'error' ? `${x.mensaje || 'No se pudo.'} Si falla otra vez, bájalo desde la PC.` : (x.mensaje || '');
   const barra = x.estado === 'pendiente' || x.estado === 'bajando'
     ? `<div class="pg ${x.estado === 'pendiente' ? 'busca' : ''}" data-id="${x.id}" data-t="${pct ?? 0}" data-auto="${x.estado === 'pendiente' ? new Date(x.creado).getTime() : ''}"><div class="barra"><i></i>${x.estado === 'pendiente' ? '' : '<s class="cometa"></s>'}</div><b class="pg-n">0 %</b></div>` : '';
   return `<li class="item"><span class="en"><b>${esc(nombreEnlace(x.enlace))}</b><small>${esc(x.enlace)}</small></span>
-    <span class="estado"><span class="pill ${esc(x.estado)}">${TEXTO[x.estado] || esc(x.estado)}</span><span class="txt">${esc(texto)}</span></span>${barra}${x.estado === 'error' ? `<button type="button" class="reint" data-enlace="${esc(x.enlace)}">Reintentar</button>` : ''}</li>`;
+    <span class="estado"><span class="pill ${esc(x.estado)}">${TEXTO[x.estado] || esc(x.estado)}</span><span class="txt">${esc(texto)}</span></span>${barra}${x.estado === 'error' ? `<button type="button" class="reint" data-enlace="${esc(x.enlace)}">Reintentar</button>` : ''}${x.estado === 'duplicado' ? `<button type="button" class="ver-bib" data-id="${esc(idRep)}">Ver en la biblioteca</button>` : ''}</li>`;
 }
 
 async function cargarLista() {
@@ -192,6 +196,15 @@ $('#lista').addEventListener('click', async (e) => {
     aviso('Listo: lo mandé otra vez. Se descarga solo en unos minutos.'); cargarLista();
   } catch { aviso('No se pudo reenviar. Revisa tu internet e inténtalo de nuevo.', true); }
   finally { b.disabled = false; b.textContent = 'Reintentar'; }
+});
+// «Ver en la biblioteca»: pasa a la pestaña Biblioteca y, si se sabe cuál es, abre la ficha de ese video.
+$('#lista').addEventListener('click', async (e) => {
+  const b = e.target.closest('.ver-bib'); if (!b) return;
+  const id = b.dataset.id;
+  pestana('biblioteca');
+  for (let i = 0; i < 40 && !(typeof todas !== 'undefined' && todas.length); i++) await new Promise((ok) => setTimeout(ok, 250));
+  if (id && todas.some((y) => y.id === id)) ficha(id);
+  else aviso(id ? 'Ese video todavía no aparece en tu biblioteca del celular. Prueba en un momento.' : 'Mira en tu Biblioteca: ahí está guardado.');
 });
 $('#salir').addEventListener('click', () => { if (confirm('¿Cerrar la sesión? Tendrás que volver a entrar.')) salir(); });
 
