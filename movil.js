@@ -80,6 +80,7 @@ function sacarMarcas(m) { // [[img:URL]] = miniatura del video; [[red:id]] = cu�
   const limpio = String(m || '').replace(MARCAS, (_, v) => { if (v.startsWith('img:')) img = v.slice(4); else id = v; return ''; }).trim();
   return { limpio, img, id };
 }
+const dominio = (u) => { try { return new URL(u).hostname.replace(/^(www|m|web)\./, ''); } catch { return String(u || ''); } }; // solo «tiktok.com» en vez del enlace cortado
 function itemHtml(x) {
   const mk = sacarMarcas(x.mensaje);
   const idRep = (x.estado === 'duplicado' || x.estado === 'listo') ? (mk.id || idDe(x.enlace) || '') : '';
@@ -90,14 +91,16 @@ function itemHtml(x) {
   const sinPrefijo = (m) => { const t = String(m || '').replace(/^Ya lo tenías:\s*/i, ''); return t.charAt(0).toUpperCase() + t.slice(1); };
   const texto = x.estado === 'pendiente' ? `${hace(x.creado)} · la nube lo recoge en segundos`
     : x.estado === 'listo' ? 'Guardado en tu Drive. Ya está en tu Biblioteca.'
-    : x.estado === 'duplicado' ? sinPrefijo(x.mensaje) : (x.mensaje || (x.estado === 'error' ? 'No se pudo.' : ''));
+    : x.estado === 'duplicado' ? sinPrefijo(x.mensaje)
+    : x.estado === 'bajando' ? String(x.mensaje || '').replace(/\s*\d+\s*%/, '') // el % se ve una sola vez: en la barra
+    : (x.mensaje || (x.estado === 'error' ? 'No se pudo.' : ''));
   const barra = x.estado === 'pendiente' || x.estado === 'bajando'
     ? `<div class="pg ${x.estado === 'pendiente' ? 'busca' : ''}" data-id="${x.id}" data-t="${pct ?? 0}" data-auto="${x.estado === 'pendiente' ? new Date(x.creado).getTime() : ''}"><div class="barra"><i></i>${x.estado === 'pendiente' ? '' : '<s class="cometa"></s>'}</div><b class="pg-n">0 %</b></div>` : '';
   const acciones = x.estado === 'error' ? `<div class="acc"><button type="button" class="reint" data-enlace="${esc(x.enlace)}">Reintentar</button><small>Si falla otra vez, bájalo desde la PC.</small></div>`
     : (x.estado === 'duplicado' || x.estado === 'listo') ? `<div class="acc"><button type="button" class="ver-bib" data-id="${esc(idRep)}">Ver en la biblioteca</button></div>` : '';
   const mini = mk.img ? `<img class="mini" src="${esc(mk.img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.closest('.item').classList.remove('con-mini');this.remove()">`
     : (x.estado === 'pendiente' || x.estado === 'bajando') ? '<span class="mini ph" aria-hidden="true"></span>' : ''; // mientras la nube busca el video: cuadro reservado que respira
-  return `<li class="item e-${esc(x.estado)}${(mk.img || x.estado === 'pendiente' || x.estado === 'bajando') ? ' con-mini' : ''}">${mini}<span class="en"><b>${esc(nombreEnlace(x.enlace))}</b><small>${esc(x.enlace)}</small></span>
+  return `<li class="item e-${esc(x.estado)}${(mk.img || x.estado === 'pendiente' || x.estado === 'bajando') ? ' con-mini' : ''}">${mini}<span class="en"><b>${esc(nombreEnlace(x.enlace))}</b><small>${esc(dominio(x.enlace))}</small></span>
     <span class="estado"><span class="pill ${esc(x.estado)}">${TEXTO[x.estado] || esc(x.estado)}</span><span class="txt">${esc(texto)}</span></span>${barra}${acciones}</li>`;
 }
 
@@ -290,7 +293,7 @@ function animarBarras(ahora) {
     // El avance real llega a saltos (cada ~4 s): entre avisos la barra sigue avanzando despacio, y los saltos se recorren poco a poco (1, 2, 3…).
     const real = +b.dataset.t || 0, ahoraMs = Date.now();
     if (b._real !== real) { b._real = real; b._cambio = ahoraMs; }
-    const meta = auto ? 90 * (1 - Math.exp(-(ahoraMs - auto) / 45000)) : Math.min(99, real + Math.min(12, (ahoraMs - b._cambio) / 1000 * 1.2));
+    const meta = auto ? 90 * (1 - Math.exp(-(ahoraMs - auto) / 45000)) : Math.min(99, real + Math.min(5, (ahoraMs - b._cambio) / 1000 * 0.6));
     let v = vistos.has(id) ? vistos.get(id) : 0;
     const paso = Math.min(10, Math.max(0.6, Math.abs(meta - v) * 0.5)) * dt; // velocidad limitada (máx. 10 % por segundo): nunca salta de golpe
     v = v < meta ? Math.min(meta, v + paso) : meta;
