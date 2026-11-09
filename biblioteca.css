@@ -14,7 +14,7 @@ select,.fav{font:inherit;font-size:15px;color:var(--text);background:#0f1611;bor
 .tarjeta:active{transform:scale(.98)}
 .tarjeta .foto{position:relative;display:block;aspect-ratio:3/4;background:var(--surface)}
 .tarjeta img{width:100%;height:100%;object-fit:cover;display:block}
-.tarjeta em{position:absolute;left:8px;top:8px;font:700 11px var(--body);font-style:normal;padding:2px 8px;border-radius:99px;background:rgba(5,8,6,.78);color:var(--text)}
+.tarjeta em{position:absolute;left:8px;top:8px;font:700 12px var(--body);font-style:normal;padding:2px 8px;border-radius:99px;background:rgba(5,8,6,.78);color:var(--text)}
 .tarjeta b{position:absolute;right:8px;top:6px;color:var(--accent);font-size:16px}
 .tarjeta .cuenta{padding:0 10px;font:600 14px var(--display);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tarjeta .gancho{padding:0 10px;font-size:14px;color:var(--soft);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
@@ -41,10 +41,10 @@ a.btn{display:grid;place-items:center;text-decoration:none}
 .btnAudio{min-height:48px;border-radius:10px;border:1px solid var(--accent);background:rgba(57,255,106,.1);color:var(--accent);font:600 15px var(--body)}
 .btnAudio:disabled{opacity:.7}
 .cajaAudio audio{width:100%;display:block}
-.enlaceChico{justify-self:center;display:inline-flex;align-items:center;gap:8px;min-height:40px;margin-top:6px;padding:0 16px;border:1px solid var(--line-hi);border-radius:10px;color:var(--soft);font-size:14px;text-decoration:none}
+.enlaceChico{justify-self:center;display:inline-flex;align-items:center;gap:8px;min-height:44px;margin-top:6px;padding:0 16px;border:1px solid var(--line-hi);border-radius:10px;color:var(--soft);font-size:14px;text-decoration:none}
 .enlaceChico svg{flex:none}
 /* Etiqueta de la red sobre cada portada, con los colores de cada una */
-.tarjeta em.r-facebook{background:#1877f2;color:#fff}
+.tarjeta em.r-facebook{background:#166fe5;color:#fff}
 .tarjeta em.r-instagram{background:linear-gradient(45deg,#feda75,#fa7e1e 28%,#d62976 58%,#962fbf 82%,#4f5bd5);color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.35)}
 .tarjeta em.r-tiktok{background:#000;color:#fff;box-shadow:-1.5px -1.5px 0 #25f4ee,1.5px 1.5px 0 #fe2c55}
 
@@ -72,7 +72,7 @@ label.rapido input{width:22px;height:22px;min-height:0;padding:0;accent-color:va
 .fichaAcc{position:sticky;bottom:calc(-1 * max(24px,env(safe-area-inset-bottom)));display:flex;gap:8px;align-items:center;margin:0 -16px calc(-1 * max(24px,env(safe-area-inset-bottom)));padding:12px 16px max(14px,env(safe-area-inset-bottom));background:linear-gradient(transparent,var(--surface) 22%);z-index:2}
 .fichaAcc .btn{flex:1;min-width:0}
 .fichaAcc .enlaceChico{margin:0;flex:none;padding:0 12px}
-.tabs{position:sticky;top:max(8px,env(safe-area-inset-top));z-index:6;box-shadow:0 8px 20px -10px #000}
+.tabs{position:sticky;top:max(8px,env(safe-area-inset-top));z-index:6;box-shadow:0 8px 20px -10px #000;margin-bottom:12px}
 .filtros{align-items:start}
 .filtros input{grid-column:1/-1}
 .filtros #fOrden{grid-column:1}
@@ -87,11 +87,11 @@ label.rapido input{width:22px;height:22px;min-height:0;padding:0;accent-color:va
 .reint{justify-self:start;min-height:44px;margin-top:6px;padding:0 18px;border:1px solid var(--accent);border-radius:10px;background:rgba(57,255,106,.1);color:var(--accent);font:600 15px var(--body)}
 .plegable[open]{grid-column:1/-1;grid-row:3}
 .filtros #fOrden{grid-row:2}
-.ver-bib{justify-self:start;min-height:40px;margin-top:6px;padding:0 14px;border:1px solid var(--line-hi);border-radius:10px;background:var(--surface);color:var(--text);font:500 14px var(--body);transition:transform .12s,border-color .15s}
+.ver-bib{justify-self:start;min-height:44px;margin-top:6px;padding:0 14px;border:1px solid var(--line-hi);border-radius:10px;background:var(--surface);color:var(--text);font:500 14px var(--body);transition:transform .12s,border-color .15s}
 .ver-bib:active{transform:scale(.97);border-color:var(--accent)}
 .item .acc .reint,.item .acc .ver-bib{margin:0}
 #rejilla li{position:relative}
 #rejilla li.halo::after{content:"";position:absolute;inset:-5px;border-radius:16px;border:2px solid var(--accent);box-shadow:0 0 26px 4px rgba(57,255,106,.6),inset 0 0 18px rgba(57,255,106,.25);pointer-events:none;animation:halo 1.1s ease-in-out 5 both}
 @keyframes halo{0%,100%{opacity:.4}50%{opacity:1}}
 
-.tarjeta .fecha{position:absolute;left:8px;bottom:8px;font:600 11px var(--body);padding:2px 7px;border-radius:99px;background:rgba(5,8,6,.78);color:var(--text);font-variant-numeric:tabular-nums;backdrop-filter:blur(4px)}
+.tarjeta .fecha{position:absolute;left:8px;bottom:8px;font:600 12px var(--body);padding:2px 7px;border-radius:99px;background:rgba(5,8,6,.78);color:var(--text);font-variant-numeric:tabular-nums;backdrop-filter:blur(4px)}
