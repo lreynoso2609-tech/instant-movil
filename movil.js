@@ -62,7 +62,9 @@ function ciclo() {
   clearTimeout(timer);
   timer = setTimeout(async () => { if (!sesion) return; if (!document.hidden) await cargarLista(); ciclo(); }, proximo);
 }
-document.addEventListener('visibilitychange', () => { if (!document.hidden && sesion) cargarLista(); });
+// Al volver a la app (después de usar otra), la lista se actualiza al instante y las barras SALTAN a su avance real (si no, tardaban en alcanzarlo).
+let turbo = 0;
+document.addEventListener('visibilitychange', () => { if (!document.hidden && sesion) { turbo = Date.now() + 7000; ultimoCuadro = performance.now(); cargarLista(); } });
 
 function hace(f) {
   const min = Math.max(0, Math.round((Date.now() - new Date(f)) / 60000));
@@ -296,7 +298,7 @@ function animarBarras(ahora) {
     const meta = auto ? 90 * (1 - Math.exp(-(ahoraMs - auto) / 45000)) : Math.min(99, real + Math.min(5, (ahoraMs - b._cambio) / 1000 * 0.6));
     let v = vistos.has(id) ? vistos.get(id) : 0;
     const paso = Math.min(10, Math.max(0.6, Math.abs(meta - v) * 0.5)) * dt; // velocidad limitada (máx. 10 % por segundo): nunca salta de golpe
-    v = v < meta ? Math.min(meta, v + paso) : meta;
+    v = (Date.now() < turbo && meta > v) ? meta : (v < meta ? Math.min(meta, v + paso) : meta); // tras volver a la app, salta al avance real
     vistos.set(id, v);
     b.querySelector('i').style.transform = 'scaleX(' + v / 100 + ')';
     const c = b.querySelector('.cometa'); if (c) { c.style.left = v + '%'; b.classList.toggle('llego', v >= 99.5); }
