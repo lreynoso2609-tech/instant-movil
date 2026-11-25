@@ -111,7 +111,10 @@ function explicar(r, texto) {
   if (/unsupported url|no video|no media/.test(t)) return 'El enlace no tiene un video descargable. Los carruseles de fotos todavía no se bajan desde el celular.';
   if (/404|not found|unavailable|removed/.test(t)) return 'La publicación ya no existe o fue borrada.';
   if (/429|403|blocked|rate.?limit|too many/.test(t)) return r + ' bloqueó a la nube por un momento. Prueba más tarde o bájalo desde la PC.';
-  return 'No se pudo descargar este enlace desde la nube.';
+  // sin motivo conocido: se muestra la última línea del error de yt-dlp (sin enlaces) para poder saber qué pasó
+  const det = String(texto || '').split('\n').map((s) => s.trim()).filter(Boolean).pop() || '';
+  const limpio = det.replace(/https?:\/\/\S+/g, '').replace(/\s+/g, ' ').trim().slice(0, 110);
+  return 'No se pudo descargar este enlace desde la nube.' + (limpio ? ' Detalle: ' + limpio : '');
 }
 const yt = (args) => spawnSync('yt-dlp', args, { encoding: 'utf8', maxBuffer: 1 << 26 });
 // yt-dlp sin bloquear, leyendo su porcentaje (la salida NO se imprime: puede traer enlaces).
